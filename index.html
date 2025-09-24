@@ -77,8 +77,8 @@
             background: #f7fafc;
         }
 
-        .nav-tab:hover {
-            background: #f1f5f9;
+        .nav-tab-ai {
+            flex: 1;
         }
 
         /* PAGES */
@@ -569,7 +569,7 @@
         .exercise-inputs {
             padding: 15px;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 0.8fr 0.8fr 1.4fr;
             gap: 10px;
         }
 
@@ -1145,7 +1145,7 @@
             }
             
             .exercise-inputs {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 0.8fr 0.8fr 1.4fr;
                 gap: 8px;
             }
 
@@ -1226,7 +1226,7 @@
             <button class="nav-tab" data-page="Schede">⚙️ Schede</button>
             <button class="nav-tab" data-page="progress">📈 Progressi</button>
             <button class="nav-tab" data-page="history">📅 Storia</button>
-            <button class="nav-tab" data-page="ai-assistant">🤖 AI Assistant</button>
+            <button class="nav-tab nav-tab-ai" data-page="ai-assistant">🤖 AI Assistant</button>
         </div>
 
         <!-- WORKOUT PAGE -->
@@ -1630,11 +1630,8 @@
             document.querySelectorAll('.ai-quick-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const prompt = this.getAttribute('data-prompt');
-                    aiInput.value = prompt;
-                    aiInput.style.height = 'auto';
-                    aiInput.style.height = Math.min(aiInput.scrollHeight, 120) + 'px';
-                    aiSendBtn.disabled = false;
-                    aiInput.focus();
+                    // Invia automaticamente il messaggio senza modificare il campo input
+                    sendAIMessage(prompt);
                 });
             });
 
@@ -1642,19 +1639,21 @@
             aiSendBtn.disabled = true;
         }
 
-        function sendAIMessage() {
+        function sendAIMessage(messageOverride = null) {
             const aiInput = document.getElementById('aiInput');
-            const message = aiInput.value.trim();
+            const message = messageOverride || aiInput.value.trim();
             
             if (!message) return;
 
             // Add user message
             addAIMessage(message, 'user');
             
-            // Clear input
-            aiInput.value = '';
-            aiInput.style.height = 'auto';
-            document.getElementById('aiSendBtn').disabled = true;
+            // Clear input only if we didn't override the message
+            if (!messageOverride) {
+                aiInput.value = '';
+                aiInput.style.height = 'auto';
+                document.getElementById('aiSendBtn').disabled = true;
+            }
 
             // Show typing indicator
             showAITyping();
@@ -1663,7 +1662,7 @@
             setTimeout(() => {
                 hideAITyping();
                 const response = generateAIResponse(message);
-                addAIMessage(response.text, 'assistant', response.Scheda);
+                addAIMessage(response.text, 'assistant', response.template);
             }, 1500 + Math.random() * 1000);
         }
 
