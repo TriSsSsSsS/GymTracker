@@ -2401,8 +2401,8 @@
 
             document.querySelectorAll('[data-template]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const template = this.getAttribute('data-template');
-                    loadScheda(Scheda);
+                    const templateId = this.getAttribute('data-template');
+                    loadScheda(templateId);
                 });
             });
         }
@@ -2658,7 +2658,17 @@
                     plugins: {
                         legend: {
                             display: Object.keys(progressData).length > 1,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                }
+                            }
                         }
                     },
                     scales: {
