@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymTracker Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -91,6 +92,335 @@
             display: block;
         }
 
+        /* AI ASSISTANT PAGE STYLES */
+        .ai-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .ai-header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .ai-header h2 {
+            color: #2d3748;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .ai-header p {
+            color: #718096;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .ai-chat-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .ai-message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .ai-message.user {
+            text-align: right;
+        }
+
+        .ai-message.assistant {
+            text-align: left;
+        }
+
+        .ai-message-bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .ai-message.user .ai-message-bubble {
+            background: #4a5568;
+            color: white;
+        }
+
+        .ai-message.assistant .ai-message-bubble {
+            background: white;
+            color: #2d3748;
+            border: 1px solid #e2e8f0;
+        }
+
+        .ai-input-container {
+            padding: 20px;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .ai-input-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .ai-input {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 12px 16px;
+            font-size: 0.95em;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            transition: border-color 0.3s ease;
+        }
+
+        .ai-input:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        .ai-send-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .ai-send-btn:hover {
+            background: #2d3748;
+            transform: scale(1.05);
+        }
+
+        .ai-send-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ai-quick-actions {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .ai-quick-actions h3 {
+            color: #2d3748;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .ai-quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .ai-quick-btn {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .ai-quick-btn:hover {
+            border-color: #4a5568;
+            background: #4a5568;
+            color: white;
+        }
+
+        .ai-typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #718096;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .ai-typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .ai-typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #cbd5e0;
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite ease-in-out;
+        }
+
+        .ai-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .ai-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .ai-template-preview {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .ai-template-preview h4 {
+            color: #2d3748;
+            font-size: 1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-template-exercises {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .ai-template-exercises li {
+            color: #4a5568;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .ai-template-exercises li::before {
+            content: "•";
+            color: #48bb78;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .ai-use-template-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .ai-use-template-btn:hover {
+            background: #38a169;
+            transform: scale(0.95);
+        }
+
+        /* PROGRESS PAGE - NEW STYLES */
+        .progress-filters {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .filter-select {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        /* CHARTS */
+        .progress-charts {
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .chart-title {
+            color: #2d3748;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
         /* WORKOUT PAGE */
         .workout-title {
             background: white;
@@ -111,7 +441,7 @@
             font-size: 0.9em;
         }
 
-        .templates {
+        .Schede {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
@@ -158,6 +488,28 @@
 
         .template-edit-btn:hover {
             background: #cbd5e0;
+        }
+
+        .template-delete-btn {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: #fed7d7;
+            color: #e53e3e;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.7em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .template-delete-btn:hover {
+            background: #feb2b2;
         }
 
         .exercise-card {
@@ -368,6 +720,24 @@
             background: #2d3748;
         }
 
+        .add-template-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .add-template-btn:hover {
+            background: #38a169;
+        }
+
         /* AUTOCOMPLETE */
         .autocomplete-container {
             position: relative;
@@ -408,13 +778,19 @@
             border-bottom: none;
         }
 
-        /* PROGRESS PAGE */
+        /* PROGRESS CARDS */
         .progress-card {
             background: white;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .progress-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
 
         .progress-header {
@@ -580,10 +956,15 @@
             justify-content: space-between;
             align-items: center;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .history-item:hover {
             background: #f8fafc;
+        }
+
+        .history-content {
+            flex: 1;
         }
 
         .history-content h3 {
@@ -604,6 +985,26 @@
             font-size: 0.8em;
             font-weight: 600;
             color: #4a5568;
+            margin-right: 10px;
+        }
+
+        .history-delete-btn {
+            background: #fed7d7;
+            color: #e53e3e;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .history-delete-btn:hover {
+            background: #feb2b2;
         }
 
         /* BUTTONS */
@@ -729,19 +1130,36 @@
         }
 
         /* RESPONSIVE */
-        @media (max-width: 480px) {
-            .exercise-inputs {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
+        @media (max-width: 768px) {
+            .progress-filters {
+                grid-template-columns: 1fr;
+                gap: 15px;
             }
             
             .progress-stats {
                 grid-template-columns: 1fr 1fr;
             }
+            
+            .chart-canvas {
+                height: 250px;
+            }
+            
+            .exercise-inputs {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
 
             .nav-tab {
                 font-size: 0.8em;
                 padding: 12px 8px;
+            }
+
+            .ai-quick-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-chat-container {
+                height: 400px;
             }
         }
 
@@ -772,6 +1190,23 @@
             font-weight: 600;
             margin-bottom: 8px;
         }
+
+        /* WORKOUT COUNTER */
+        .workout-counter {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #4a5568;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -788,9 +1223,10 @@
         <!-- NAVIGATION -->
         <div class="nav-tabs">
             <button class="nav-tab active" data-page="workout">🏋️ Workout</button>
-            <button class="nav-tab" data-page="templates">⚙️ Templates</button>
+            <button class="nav-tab" data-page="Schede">⚙️ Schede</button>
             <button class="nav-tab" data-page="progress">📈 Progressi</button>
             <button class="nav-tab" data-page="history">📅 Storia</button>
+            <button class="nav-tab" data-page="ai-assistant">🤖 AI Assistant</button>
         </div>
 
         <!-- WORKOUT PAGE -->
@@ -800,8 +1236,8 @@
                 <div class="workout-date" id="workoutDate"></div>
             </div>
 
-            <div class="templates" id="templateButtons">
-                <!-- I template verranno inseriti qui -->
+            <div class="Schede" id="SchedaButtons">
+                <!-- I Scheda verranno inseriti qui -->
             </div>
 
             <button class="add-exercise-btn" id="addExerciseBtn">➕ Aggiungi Esercizio</button>
@@ -813,15 +1249,52 @@
             <button class="save-workout-btn" id="saveWorkoutBtn" style="display: none;">💾 Salva Allenamento</button>
         </div>
 
-        <!-- TEMPLATES PAGE -->
-        <div id="templatesPage" class="page">
-            <div id="templateEditorsList">
+        <!-- Templates PAGE -->
+        <div id="SchedePage" class="page">
+            <button class="add-template-btn" id="addSchedaBtn">➕ Crea Nuova Scheda</button>
+            <div id="SchedaEditorsList">
                 <!-- Gli editor dei template verranno inseriti qui -->
             </div>
         </div>
 
         <!-- PROGRESS PAGE -->
         <div id="progressPage" class="page">
+            <!-- TIME FILTERS -->
+            <div class="progress-filters">
+                <div class="filter-group">
+                    <label class="filter-label">Periodo:</label>
+                    <select id="timeFilter" class="filter-select">
+                        <option value="all">Tutto il tempo</option>
+                        <option value="30">Ultimi 30 giorni</option>
+                        <option value="90">Ultimi 3 mesi</option>
+                        <option value="180">Ultimi 6 mesi</option>
+                        <option value="365">Ultimo anno</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Esercizio:</label>
+                    <select id="exerciseFilter" class="filter-select">
+                        <option value="">Tutti gli esercizi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PROGRESS CHARTS -->
+            <div class="progress-charts">
+                <div class="chart-container">
+                    <h3 class="chart-title">📊 Progressione Peso nel Tempo</h3>
+                    <div class="chart-canvas">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">📊 Volume di Allenamento</h3>
+                    <div class="chart-canvas">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <div id="progressList">
                 <!-- I progressi verranno inseriti qui -->
             </div>
@@ -848,6 +1321,85 @@
             </div>
         </div>
 
+        <!-- AI ASSISTANT PAGE -->
+        <div id="ai-assistantPage" class="page">
+            <div class="ai-container">
+                <!-- AI HEADER -->
+                <div class="ai-header">
+                    <h2>🤖 AI Assistant</h2>
+                    <p>Chiedi consigli per i tuoi allenamenti o fatti creare una scheda personalizzata!</p>
+                </div>
+
+                <!-- QUICK ACTIONS -->
+                <div class="ai-quick-actions">
+                    <h3>💡 Azioni Rapide</h3>
+                    <div class="ai-quick-buttons">
+                        <button class="ai-quick-btn" data-prompt="Suggerisci esercizi per i pettorali">
+                            💪 Esercizi Pettorali
+                        </button>
+                        <button class="ai-quick-btn" data-prompt="Come eseguire la panca piana?">
+                            🏋️ Come fare Panca Piana
+                        </button>
+                        <button class="ai-quick-btn" data-prompt="Suggerisci esercizi per le braccia">
+                            💥 Esercizi Braccia
+                        </button>
+                        <button class="ai-quick-btn" data-prompt="Come eseguire le trazioni?">
+                            🏗️ Come fare Trazioni
+                        </button>
+                        <button class="ai-quick-btn" data-prompt="Suggerisci esercizi per le gambe">
+                            🦵 Esercizi Gambe
+                        </button>
+                        <button class="ai-quick-btn" data-prompt="Esercizi per la schiena senza attrezzi">
+                            🏠 Allenamento Casa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CHAT CONTAINER -->
+                <div class="ai-chat-container">
+                    <div class="ai-chat-messages" id="aiChatMessages">
+                        <div class="ai-message assistant">
+                            <div class="ai-message-bubble">
+                                Ciao! Sono il tuo assistente AI per il fitness. Posso aiutarti con:
+                                <br><br>
+                                • Creare schede di allenamento personalizzate<br>
+                                • Suggerire esercizi specifici<br>
+                                • Dare consigli sulla tecnica<br>
+                                • Rispondere a domande sul fitness<br>
+                                <br>
+                                Cosa posso fare per te oggi?
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TYPING INDICATOR -->
+                    <div class="ai-typing-indicator" id="aiTypingIndicator">
+                        <span>AI sta scrivendo</span>
+                        <div class="ai-typing-dots">
+                            <div class="ai-typing-dot"></div>
+                            <div class="ai-typing-dot"></div>
+                            <div class="ai-typing-dot"></div>
+                        </div>
+                    </div>
+
+                    <!-- INPUT CONTAINER -->
+                    <div class="ai-input-container">
+                        <form class="ai-input-form" id="aiInputForm">
+                            <textarea 
+                                class="ai-input" 
+                                id="aiInput" 
+                                placeholder="Scrivi la tua domanda o richiesta..."
+                                rows="1"
+                            ></textarea>
+                            <button type="submit" class="ai-send-btn" id="aiSendBtn">
+                                ➤
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- MODALS -->
         <div id="exerciseModal" class="modal">
             <div class="modal-content">
@@ -863,21 +1415,32 @@
             </div>
         </div>
 
-        <div id="templateExerciseModal" class="modal">
+        <div id="SchedaExerciseModal" class="modal">
             <div class="modal-content">
-                <h3 class="modal-title">➕ Esercizio Template</h3>
+                <h3 class="modal-title">➕ Esercizio Scheda</h3>
                 <div class="autocomplete-container">
-                    <input type="text" id="templateExerciseNameInput" class="modal-input" placeholder="Nome esercizio">
-                    <div id="templateExerciseSuggestions" class="autocomplete-suggestions"></div>
+                    <input type="text" id="SchedaExerciseNameInput" class="modal-input" placeholder="Nome esercizio">
+                    <div id="SchedaExerciseSuggestions" class="autocomplete-suggestions"></div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                    <input type="number" id="templateExerciseSetsInput" class="modal-input" placeholder="Serie" style="margin-bottom: 0;">
-                    <input type="number" id="templateExerciseRepsInput" class="modal-input" placeholder="Reps" style="margin-bottom: 0;">
-                    <input type="number" id="templateExerciseWeightInput" class="modal-input" placeholder="Kg" step="0.5" style="margin-bottom: 0;">
+                    <input type="number" id="SchedaExerciseSetsInput" class="modal-input" placeholder="Serie" style="margin-bottom: 0;">
+                    <input type="number" id="SchedaExerciseRepsInput" class="modal-input" placeholder="Reps" style="margin-bottom: 0;">
+                    <input type="number" id="SchedaExerciseWeightInput" class="modal-input" placeholder="Kg" step="0.5" style="margin-bottom: 0;">
                 </div>
                 <div class="modal-buttons">
-                    <button class="modal-btn primary" id="confirmAddTemplateExercise">Aggiungi</button>
-                    <button class="modal-btn secondary" id="cancelAddTemplateExercise">Annulla</button>
+                    <button class="modal-btn primary" id="confirmAddSchedaExercise">Aggiungi</button>
+                    <button class="modal-btn secondary" id="cancelAddSchedaExercise">Annulla</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="newSchedaModal" class="modal">
+            <div class="modal-content">
+                <h3 class="modal-title">➕ Nuovo Scheda</h3>
+                <input type="text" id="newSchedaNameInput" class="modal-input" placeholder="Nome del Scheda">
+                <div class="modal-buttons">
+                    <button class="modal-btn primary" id="confirmAddScheda">Crea</button>
+                    <button class="modal-btn secondary" id="cancelAddScheda">Annulla</button>
                 </div>
             </div>
         </div>
@@ -900,13 +1463,14 @@
         // VARIABILI GLOBALI
         let currentExercises = [];
         let workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
-        let exerciseData = JSON.parse(localStorage.getItem('exerciseData') || '{}');
         let currentCalendarDate = new Date();
-        let currentEditingTemplate = null;
+        let currentEditingScheda = null;
         let selectedSuggestionIndex = -1;
+        let weightChart = null;
+        let volumeChart = null;
 
-        // TEMPLATES PERSONALIZZABILI
-        let customTemplates = JSON.parse(localStorage.getItem('customTemplates') || JSON.stringify({
+        // Schede PERSONALIZZABILI
+        let customSchede = JSON.parse(localStorage.getItem('customSchede') || JSON.stringify({
             push: {
                 name: '🔥 Push Day',
                 exercises: [
@@ -958,25 +1522,42 @@
 
         // INIZIALIZZAZIONE
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('App inizializzata - CLEAN START');
+            console.log('GymTracker Pro - Versione con AI Assistant inizializzata');
+            
+            // Migrazione dati esistenti per aggiungere ID univoci
+            migrateWorkoutHistory();
+            
             initializeApp();
             setupEventListeners();
             setupAutocomplete();
+            setupAIAssistant();
         });
+
+        // CORREZIONE BUG 2: Migrazione dati per aggiungere ID univoci
+        function migrateWorkoutHistory() {
+            let needsMigration = false;
+            workoutHistory.forEach(workout => {
+                if (!workout.id) {
+                    workout.id = Date.now() + Math.random();
+                    needsMigration = true;
+                }
+            });
+            
+            if (needsMigration) {
+                localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+            }
+        }
 
         function initializeApp() {
             updateWorkoutDate();
             updateStats();
             
-            // CAMBIAMENTO CHIAVE: NON caricare automaticamente il workout di oggi
-            // loadTodayWorkout(); <-- RIMOSSO
-            
-            // Inizializza con currentExercises vuoto - mostra stato empty
+            // Inizializza con currentExercises vuoto
             currentExercises = [];
             
             renderExercises();
-            renderTemplateButtons();
-            renderTemplateEditors();
+            renderSchedaButtons();
+            renderSchedaEditors();
             renderProgress();
             renderHistory();
             renderCalendar();
@@ -996,14 +1577,23 @@
             document.getElementById('saveWorkoutBtn').addEventListener('click', showSaveWorkoutModal);
             document.getElementById('confirmAddExercise').addEventListener('click', confirmAddExercise);
             document.getElementById('cancelAddExercise').addEventListener('click', hideModal);
-            document.getElementById('confirmAddTemplateExercise').addEventListener('click', confirmAddTemplateExercise);
-            document.getElementById('cancelAddTemplateExercise').addEventListener('click', hideModal);
+            document.getElementById('confirmAddSchedaExercise').addEventListener('click', confirmAddSchedaExercise);
+            document.getElementById('cancelAddSchedaExercise').addEventListener('click', hideModal);
             document.getElementById('confirmSaveWorkout').addEventListener('click', confirmSaveWorkout);
             document.getElementById('cancelSaveWorkout').addEventListener('click', hideModal);
+            
+            // New Scheda buttons
+            document.getElementById('addSchedaBtn').addEventListener('click', showAddSchedaModal);
+            document.getElementById('confirmAddScheda').addEventListener('click', confirmAddScheda);
+            document.getElementById('cancelAddScheda').addEventListener('click', hideModal);
 
             // Calendar navigation
             document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
             document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+
+            // CORREZIONE BUG 3: Progress filters
+            document.getElementById('timeFilter').addEventListener('change', updateProgressCharts);
+            document.getElementById('exerciseFilter').addEventListener('change', updateProgressCharts);
 
             // Close modal when clicking outside
             document.querySelectorAll('.modal').forEach(modal => {
@@ -1015,15 +1605,499 @@
             });
         }
 
+        // AI ASSISTANT SETUP
+        function setupAIAssistant() {
+            const aiInputForm = document.getElementById('aiInputForm');
+            const aiInput = document.getElementById('aiInput');
+            const aiSendBtn = document.getElementById('aiSendBtn');
+
+            // Form submission
+            aiInputForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendAIMessage();
+            });
+
+            // Auto-resize textarea
+            aiInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                
+                // Enable/disable send button
+                aiSendBtn.disabled = !this.value.trim();
+            });
+
+            // Quick action buttons
+            document.querySelectorAll('.ai-quick-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const prompt = this.getAttribute('data-prompt');
+                    aiInput.value = prompt;
+                    aiInput.style.height = 'auto';
+                    aiInput.style.height = Math.min(aiInput.scrollHeight, 120) + 'px';
+                    aiSendBtn.disabled = false;
+                    aiInput.focus();
+                });
+            });
+
+            // Initial state
+            aiSendBtn.disabled = true;
+        }
+
+        function sendAIMessage() {
+            const aiInput = document.getElementById('aiInput');
+            const message = aiInput.value.trim();
+            
+            if (!message) return;
+
+            // Add user message
+            addAIMessage(message, 'user');
+            
+            // Clear input
+            aiInput.value = '';
+            aiInput.style.height = 'auto';
+            document.getElementById('aiSendBtn').disabled = true;
+
+            // Show typing indicator
+            showAITyping();
+
+            // Simulate AI response delay
+            setTimeout(() => {
+                hideAITyping();
+                const response = generateAIResponse(message);
+                addAIMessage(response.text, 'assistant', response.Scheda);
+            }, 1500 + Math.random() * 1000);
+        }
+
+        function addAIMessage(text, sender, template = null) {
+            const messagesContainer = document.getElementById('aiChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-message ${sender}`;
+            
+            let content = `<div class="ai-message-bubble">${text}</div>`;
+            
+            if (template) {
+                content += `
+                    <div class="ai-template-preview">
+                        <h4>🏋️ ${template.name}</h4>
+                        <ul class="ai-template-exercises">
+                            ${template.exercises.map(ex => 
+                                `<li>${ex.name} - ${ex.sets} serie × ${ex.reps} reps @ ${ex.weight}kg</li>`
+                            ).join('')}
+                        </ul>
+                        <button class="ai-use-template-btn" onclick="useAITemplate('${template.id}')">
+                            Usa questa scheda
+                        </button>
+                    </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = content;
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showAITyping() {
+            document.getElementById('aiTypingIndicator').style.display = 'flex';
+            const messagesContainer = document.getElementById('aiChatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideAITyping() {
+            document.getElementById('aiTypingIndicator').style.display = 'none';
+        }
+
+        function generateAIResponse(userMessage) {
+            const message = userMessage.toLowerCase();
+            
+            // Scheda generation responses
+            if (message.includes('scheda') || message.includes('Scheda') || message.includes('programma')) {
+                if (message.includes('principianti') || message.includes('beginner')) {
+                    return {
+                        text: "Ecco una scheda perfetta per principianti! Si concentra sui movimenti base e permette di imparare la tecnica corretta:",
+                        template: {
+                            id: 'ai_beginner_' + Date.now(),
+                            name: '🌟 Scheda Principianti',
+                            exercises: [
+                                { name: 'Squat', sets: 3, reps: 12, weight: 40 },
+                                { name: 'Panca Piana', sets: 3, reps: 10, weight: 50 },
+                                { name: 'Rematore con Bilanciere', sets: 3, reps: 10, weight: 40 },
+                                { name: 'Military Press', sets: 3, reps: 8, weight: 30 },
+                                { name: 'Plank', sets: 3, reps: 30, weight: 0 }
+                            ]
+                        }
+                    };
+                } else if (message.includes('push') && message.includes('pull')) {
+                    return {
+                        text: "Ottima scelta! Ecco una scheda Push/Pull/Legs bilanciata per massimizzare i tuoi risultati:",
+                        template: {
+                            id: 'ai_ppl_' + Date.now(),
+                            name: '🔄 Push/Pull/Legs',
+                            exercises: [
+                                { name: 'Panca Piana', sets: 4, reps: 8, weight: 80 },
+                                { name: 'Trazioni', sets: 4, reps: 8, weight: 0 },
+                                { name: 'Squat', sets: 4, reps: 10, weight: 100 },
+                                { name: 'Dips', sets: 3, reps: 12, weight: 0 },
+                                { name: 'Pulley', sets: 3, reps: 12, weight: 45 },
+                                { name: 'Stacchi Rumeni', sets: 3, reps: 10, weight: 80 }
+                            ]
+                        }
+                    };
+                } else if (message.includes('forza') || message.includes('strength')) {
+                    return {
+                        text: "Per aumentare la forza, ecco una scheda focalizzata sui grandi movimenti con carichi elevati:",
+                        template: {
+                            id: 'ai_strength_' + Date.now(),
+                            name: '💥 Forza Massimale',
+                            exercises: [
+                                { name: 'Squat', sets: 5, reps: 5, weight: 120 },
+                                { name: 'Panca Piana', sets: 5, reps: 5, weight: 90 },
+                                { name: 'Stacco da Terra', sets: 5, reps: 5, weight: 140 },
+                                { name: 'Military Press', sets: 4, reps: 6, weight: 50 }
+                            ]
+                        }
+                    };
+                }
+            }
+            
+            // Exercise suggestions
+            if (message.includes('pettorali') || message.includes('petto') || message.includes('chest') || message.includes('torace')) {
+                const chestResponses = [
+                    "Per sviluppare i pettorali ti consiglio questi esercizi fondamentali:\n\n• **Panca Piana**: L'esercizio base per massa e forza\n• **Panca Inclinata**: Per la parte alta dei pettorali\n• **Dips**: Ottimo per la parte bassa\n• **Croci con Manubri**: Per l'isolamento e la definizione\n• **Push-up**: Perfetti per l'allenamento a casa\n\nRicorda di variare angoli e prese per uno sviluppo completo!",
+                    "Ecco i migliori esercizi per il petto:\n\n🏋️ **Panca Piana**: King of chest exercises\n🏋️ **Panca Inclinata con Manubri**: Per upper chest\n🏋️ **Dips**: Bodyweight chest destroyer\n🏋️ **Croci ai Cavi**: Per definizione\n🏋️ **Push-ups**: Sempre efficaci\n\nCombina composti e isolamento per risultati ottimali!",
+                    "Per pettorali scolpiti, ecco la mia selezione:\n\n💪 **Bench Press**: Base di tutto\n💪 **Incline Dumbbell Press**: Per la parte superiore\n💪 **Chest Dips**: Intensità massima\n💪 **Pec Deck**: Isolamento perfetto\n💪 **Diamond Push-ups**: Variante avanzata\n\nVaria i grip e gli angoli regolarmente!"
+                ];
+                return {
+                    text: chestResponses[Math.floor(Math.random() * chestResponses.length)]
+                };
+            }
+            
+            if (message.includes('schiena') || message.includes('dorso') || message.includes('back') || message.includes('schienale')) {
+                const backResponses = [
+                    "Per una schiena forte e ampia, ecco i migliori esercizi:\n\n• **Trazioni**: Il re degli esercizi per la schiena\n• **Rematore con Bilanciere**: Per spessore e forza\n• **Lat Machine**: Ottima alternativa alle trazioni\n• **Pulley**: Per i dettagli e la larghezza\n• **Stacco da Terra**: Coinvolge tutta la catena posteriore\n\nConcentrati sulla tecnica e sulla connessione mente-muscolo!",
+                    "Eccellenti esercizi per sviluppare il dorso:\n\n🏋️ **Pull-ups**: Upper back mastery\n🏋️ **Bent-over Row**: Thickness builder\n🏋️ **Lat Pulldown**: Width creator\n🏋️ **Face Pulls**: Rear delt focus\n🏋️ **Deadlift**: Full posterior chain\n\nLa schiena ha bisogno di esercizi verticali e orizzontali!",
+                    "Per una schiena impressionante:\n\n💪 **Chin-ups**: Lats on fire\n💪 **Seated Cable Row**: Controlled power\n💪 **T-Bar Row**: Old school effective\n💪 **Rear Delt Flyes**: Balanced development\n💪 **Good Mornings**: Hamstring & back\n\nDedica tempo alla schiena, ne varrà la pena!"
+                ];
+                return {
+                    text: backResponses[Math.floor(Math.random() * backResponses.length)]
+                };
+            }
+            
+            if (message.includes('squat') && message.includes('tecnica')) {
+                return {
+                    text: "Ecco i punti chiave per un squat perfetto:\n\n🎯 **Setup**:\n• Piedi larghezza spalle, punte leggermente aperte\n• Bilanciere sui trapezi, non sul collo\n• Core attivato, petto in fuori\n\n🎯 **Esecuzione**:\n• Inizia spingendo i fianchi indietro\n• Scendi fino a quando le cosce sono parallele\n• Ginocchia in linea con le punte dei piedi\n• Risali spingendo attraverso i talloni\n\n⚠️ **Errori comuni da evitare**:\n• Ginocchia che cedono verso l'interno\n• Schiena che si incurva\n• Non scendere abbastanza\n• Peso sui talloni"
+                };
+            }
+            
+            // Exercise execution instructions
+            if (message.includes('panca piana') || message.includes('bench press')) {
+                return {
+                    text: "Ecco come eseguire correttamente la Panca Piana:\n\n🎯 **Setup**:\n• Sdraiati sulla panca con i piedi ben piantati\n• Impugna il bilanciere con presa leggermente più larga delle spalle\n• Archi leggermente la schiena, spalle indietro\n\n🎯 **Esecuzione**:\n• Abbassa il bilanciere controllatamente fino al petto\n• Tocca il petto senza rimbalzare\n• Spingi verso l'alto esplosivamente\n• Blocca le braccia in alto senza iperestendere\n\n⚠️ **Errori comuni**:\n• Non abbassare abbastanza il bilanciere\n• Rimbalzare sul petto\n• Sollevare i glutei dalla panca\n• Non controllare la discesa"
+                };
+            }
+            
+            if (message.includes('trazioni') || message.includes('pull-ups')) {
+                return {
+                    text: "Guida completa alle Trazioni alla Sbarra:\n\n🎯 **Setup**:\n• Impugna la sbarra con presa prona (palmi in avanti)\n• Braccia completamente estese, spalle rilassate\n• Piedi uniti o leggermente divaricati\n\n🎯 **Esecuzione**:\n• Tira il corpo verso l'alto fino a quando il mento supera la sbarra\n• Abbassa controllatamente fino alle braccia tese\n• Mantieni il core contratto\n• Respira regolarmente\n\n💡 **Varianti**:\n• **Assisted**: Usa bande elastiche o macchina\n• **Negative**: Scendi lentamente, sali con aiuto\n• **Chin-ups**: Palmi verso di te per coinvolgere più bicipiti\n\n⚠️ **Errori comuni**:\n• Usare slancio (kipping)\n• Non completare il movimento\n• Oscillare il corpo"
+                };
+            }
+            
+            if (message.includes('squat') && !message.includes('tecnica')) {
+                return {
+                    text: "Lo Squat è uno dei fondamentali esercizi per le gambe. Ecco come eseguirlo:\n\n🎯 **Setup**:\n• Piedi larghezza spalle, punte leggermente aperte\n• Bilanciere sui trapezi posteriori\n• Guarda avanti, petto in fuori\n\n🎯 **Esecuzione**:\n• Inizia piegando anche e ginocchia contemporaneamente\n• Scendi fino a cosce parallele al suolo\n• Risali spingendo attraverso i talloni\n• Estendi completamente anche e ginocchia\n\n💡 **Varianti**:\n• **Front Squat**: Bilanciere sulle spalle anteriori\n• **Goblet Squat**: Manubrio al petto\n• **Bulgarian Split Squat**: Una gamba elevata\n\n⚠️ **Errori comuni**:\n• Ginocchia che collassano verso l'interno\n• Schiena che si incurva\n• Peso spostato sulle punte"
+                };
+            }
+            
+            if (message.includes('military press') || message.includes('shoulder press')) {
+                return {
+                    text: "Il Military Press per spalle potenti:\n\n🎯 **Setup**:\n• Siediti o stai in piedi con bilanciere al petto\n• Mani larghezza spalle, palmi in avanti\n• Gomiti sotto il bilanciere\n\n🎯 **Esecuzione**:\n• Spingi il bilanciere verso l'alto\n• Estendi completamente le braccia\n• Abbassa controllatamente al petto\n• Mantieni il core contratto\n\n💡 **Varianti**:\n• **Dumbbell Press**: Con manubri per maggiore range\n• **Arnold Press**: Rotazione durante il movimento\n• **Seated**: Più stabile per principianti\n\n⚠️ **Errori comuni**:\n• Inarcare eccessivamente la schiena\n• Usare slancio\n• Non completare il lockout"
+                };
+            }
+            
+            if (message.includes('rematore') || message.includes('row')) {
+                return {
+                    text: "Il Rematore con Bilanciere per una schiena forte:\n\n🎯 **Setup**:\n• Piedi larghezza spalle, ginocchia leggermente piegate\n• Impugna il bilanciere con presa prona\n• Schiena neutra, petto in fuori\n\n🎯 **Esecuzione**:\n• Tira il bilanciere verso l'addome\n• Contrai i dorsali, spingi indietro le spalle\n• Abbassa controllatamente\n• Mantieni la schiena dritta\n\n💡 **Varianti**:\n• **Dumbbell Row**: Singolo braccio per focus unilaterale\n• **Cable Row**: Macchina per tensione costante\n• **T-Bar Row**: Per maggiore isolamento\n\n⚠️ **Errori comuni**:\n• Usare slancio\n• Arrotondare la schiena\n• Non contrarre i dorsali"
+                };
+            }
+            
+            if (message.includes('panca inclinata') || message.includes('incline bench') || message.includes('petto inclinato')) {
+                return {
+                    text: "La Panca Inclinata per la parte superiore del petto:\n\n🎯 **Setup**:\n• Inclina la panca a 30-45 gradi\n• Sdraiati con i piedi ben piantati\n• Impugna il bilanciere più largo delle spalle\n\n🎯 **Esecuzione**:\n• Abbassa il bilanciere al petto controllatamente\n• Spingi verso l'alto esplosivamente\n• Blocca le braccia senza iperestendere\n• Mantieni le spalle indietro\n\n💡 **Benefici**:\n• Sviluppa la parte clavicolare del petto\n• Migliora la definizione superiore\n• Complementa la panca piana tradizionale\n\n⚠️ **Errori comuni**:\n• Inclinare troppo la panca\n• Non controllare la discesa\n• Sollevare i glutei"
+                };
+            }
+            
+            if (message.includes('spinte manubri') || message.includes('dumbbell press') || message.includes('petto manubri')) {
+                return {
+                    text: "Le Spinte con Manubri per un petto bilanciato:\n\n🎯 **Setup**:\n• Sdraiati sulla panca con manubri al petto\n• Palmi in avanti, gomiti a 45 gradi\n• Piedi ben piantati a terra\n\n🎯 **Esecuzione**:\n• Spingi i manubri verso l'alto simultaneamente\n• Estendi le braccia senza bloccare\n• Abbassa controllatamente fino al petto\n• Mantieni il core contratto\n\n💡 **Vantaggi**:\n• Maggiore range di movimento\n• Bilancia eventuali asimmetrie\n• Coinvolge stabilizzatori aggiuntivi\n\n⚠️ **Errori comuni**:\n• Lasciare cadere i manubri\n• Non controllare la discesa\n• Usare slancio"
+                };
+            }
+            
+            if (message.includes('dips') || message.includes('parallele')) {
+                return {
+                    text: "I Dips per tricipiti e petto inferiore:\n\n🎯 **Setup**:\n• Impugna le parallele con braccia tese\n• Gambe incrociate dietro o estese\n• Corpo leggermente inclinato in avanti\n\n🎯 **Esecuzione**:\n• Abbassa il corpo piegando i gomiti\n• Scendi fino a 90 gradi nei gomiti\n• Spingi verso l'alto senza bloccare\n• Mantieni le spalle basse\n\n💡 **Varianti**:\n• **Chest Dips**: Inclinato in avanti per più petto\n• **Tricep Dips**: Corpo verticale per più tricipiti\n• **Assisted**: Usa bande elastiche\n\n⚠️ **Errori comuni**:\n• Scendere troppo in basso\n• Usare slancio\n• Non controllare il movimento"
+                };
+            }
+            
+            if (message.includes('tricep pushdown') || message.includes('pushdown') || message.includes('tricipiti cavo')) {
+                return {
+                    text: "Il Tricep Pushdown per isolare i tricipiti:\n\n🎯 **Setup**:\n• Impugna la corda o barra del cavo\n• Gomiti fissi ai fianchi\n• Palmi in avanti o neutri\n\n🎯 **Esecuzione**:\n• Estendi le braccia verso il basso\n• Contrai i tricipiti completamente\n• Ritorna lentamente alla posizione iniziale\n• Mantieni i gomiti immobili\n\n💡 **Varianti**:\n• **Rope**: Per maggiore coinvolgimento\n• **Straight Bar**: Per focus centrale\n• **Reverse Grip**: Per diverso angolo\n\n⚠️ **Errori comuni**:\n• Muovere i gomiti\n• Usare slancio\n• Non completare l'estensione"
+                };
+            }
+            
+            if (message.includes('lat machine') || message.includes('lat pulldown') || message.includes('tirate machine')) {
+                return {
+                    text: "La Lat Machine per una schiena ampia:\n\n🎯 **Setup**:\n• Siediti con cosce sotto i supporti\n• Impugna la barra con presa larga\n• Schiena leggermente inclinata indietro\n\n🎯 **Esecuzione**:\n• Tira la barra verso il petto\n• Contrai i dorsali e le spalle indietro\n• Abbassa controllatamente\n• Mantieni il petto in fuori\n\n💡 **Varianti**:\n• **Wide Grip**: Per larghezza\n• **Narrow Grip**: Per spessore\n• **Behind Neck**: Per maggiore range (cautela)\n\n⚠️ **Errori comuni**:\n• Usare slancio\n• Non contrarre i dorsali\n• Arrotondare la schiena"
+                };
+            }
+            
+            if (message.includes('pulley') || message.includes('face pull') || message.includes('tirate faccia')) {
+                return {
+                    text: "Il Pulley (Face Pull) per spalle posteriori:\n\n🎯 **Setup**:\n• Impugna la corda del cavo all'altezza del viso\n• Fai un passo indietro per tensione\n• Gomiti alti, paralleli al suolo\n\n🎯 **Esecuzione**:\n• Tira la corda verso il viso\n• Separa le mani ai lati della testa\n• Contrai i posteriori delle spalle\n• Ritorna controllatamente\n\n💡 **Benefici**:\n• Migliora la postura\n• Previene infortuni alle spalle\n• Equilibra lo sviluppo deltoideo\n\n⚠️ **Errori comuni**:\n• Usare troppo peso\n• Non controllare il movimento\n• Abbassare i gomiti"
+                };
+            }
+            
+            if (message.includes('curl bilanciere') || message.includes('barbell curl') || message.includes('bicipiti bilanciere')) {
+                return {
+                    text: "Il Curl con Bilanciere per bicipiti:\n\n🎯 **Setup**:\n• Piedi larghezza spalle, bilanciere con presa supina\n• Braccia tese lungo i fianchi\n• Gomiti fissi ai fianchi\n\n🎯 **Esecuzione**:\n• Fletti i gomiti portando il bilanciere alle spalle\n• Contrai i bicipiti in alto\n• Abbassa controllatamente\n• Mantieni i gomiti immobili\n\n💡 **Varianti**:\n• **EZ Bar**: Riduce stress sui polsi\n• **Preacher Curl**: Per isolamento maggiore\n• **Hammer Curl**: Con manubri, presa neutra\n\n⚠️ **Errori comuni**:\n• Usare slancio\n• Muovere i gomiti\n• Non completare il movimento"
+                };
+            }
+            
+            if (message.includes('stacchi rumeni') || message.includes('romanian deadlift') || message.includes('stacco rumeno')) {
+                return {
+                    text: "Gli Stacchi Rumeni per hamstring e glutei:\n\n🎯 **Setup**:\n• Piedi larghezza spalle, bilanciere davanti\n• Presa prona, ginocchia leggermente piegate\n• Schiena neutra, petto in fuori\n\n🎯 **Esecuzione**:\n• Abbassa il bilanciere spingendo i glutei indietro\n• Mantieni le gambe quasi tese\n• Scendi fino a sentire tensione negli hamstring\n• Risali contraendo i glutei\n\n💡 **Benefici**:\n• Sviluppa catena posteriore\n• Migliora mobilità dell'anca\n• Complementa squat e stacchi\n\n⚠️ **Errori comuni**:\n• Arrotondare la schiena\n• Piegare troppo le ginocchia\n• Non controllare la discesa"
+                };
+            }
+            
+            if (message.includes('leg press') || message.includes('pressa gambe')) {
+                return {
+                    text: "Il Leg Press per quadricipiti e glutei:\n\n🎯 **Setup**:\n• Siediti con schiena appoggiata\n• Piedi larghezza spalle sulla pedana\n• Ginocchia a 90 gradi nella posizione iniziale\n\n🎯 **Esecuzione**:\n• Estendi le gambe senza bloccare le ginocchia\n• Abbassa controllatamente fino a 90 gradi\n• Mantieni i piedi piatti\n• Respira regolarmente\n\n💡 **Varianti**:\n• **Wide Stance**: Più glutei\n• **Narrow Stance**: Più quadricipiti\n• **Single Leg**: Per correzione asimmetrie\n\n⚠️ **Errori comuni**:\n• Rimuovere i glutei dal sedile\n• Non controllare la discesa\n• Piedi troppo in alto o basso"
+                };
+            }
+            
+            if (message.includes('leg extension') || message.includes('estensioni gambe')) {
+                return {
+                    text: "La Leg Extension per quadricipiti isolati:\n\n🎯 **Setup**:\n• Siediti con schiena appoggiata\n• Caviglie sotto i supporti\n• Ginocchia a 90 gradi\n\n🎯 **Esecuzione**:\n• Estendi le gambe completamente\n• Contrai i quadricipiti in alto\n• Abbassa controllatamente\n• Mantieni il controllo\n\n💡 **Consigli**:\n• Buon esercizio di isolamento\n• Da fare dopo esercizi composti\n• Non usare pesi troppo pesanti\n\n⚠️ **Errori comuni**:\n• Usare slancio\n• Non completare l'estensione\n• Muovere il busto"
+                };
+            }
+            
+            if (message.includes('leg curl') || message.includes('curl gambe')) {
+                return {
+                    text: "Il Leg Curl per hamstring isolati:\n\n🎯 **Setup**:\n• Sdraiati prono sulla macchina\n• Caviglie sotto i supporti\n• Anche rilassate\n\n🎯 **Esecuzione**:\n• Fletti le ginocchia portando i talloni ai glutei\n• Contrai gli hamstring\n• Estendi controllatamente\n• Mantieni il core contratto\n\n💡 **Varianti**:\n• **Seated**: Seduto per focus diverso\n• **Standing**: In piedi con cavo\n• **Single Leg**: Per correzione squilibri\n\n⚠️ **Errori comuni**:\n• Usare slancio\n• Non controllare l'estensione\n• Sollevare i glutei"
+                };
+            }
+            
+            if (message.includes('tapis roulant') || message.includes('treadmill') || message.includes('correre tapis')) {
+                return {
+                    text: "Il Tapis Roulant per cardio efficace:\n\n🎯 **Setup**:\n• Scegli velocità e inclinazione appropriate\n• Mantieni postura eretta\n• Guarda avanti, non giù\n\n🎯 **Esecuzione**:\n• Cammina/corri con ritmo costante\n• Usa le braccia per bilanciamento\n• Respira regolarmente\n• Monitora frequenza cardiaca\n\n💡 **Benefici**:\n• Migliora capacità cardiovascolare\n• Brucia calorie efficacemente\n• Adattabile a tutti i livelli\n\n⚠️ **Consigli di sicurezza**:\n• Inizia con riscaldamento\n• Non tenere i corrimano\n• Idratati regolarmente"
+                };
+            }
+            
+            if (message.includes('cyclette') || message.includes('stationary bike') || message.includes('bici stazionaria')) {
+                return {
+                    text: "La Cyclette per cardio a basso impatto:\n\n🎯 **Setup**:\n• Regola sella e manubrio\n• Scegli resistenza appropriata\n• Mantieni schiena dritta\n\n🎯 **Esecuzione**:\n• Pedala con ritmo costante\n• Mantieni core contratto\n• Respira regolarmente\n• Varia intensità se possibile\n\n💡 **Vantaggi**:\n• Basso impatto sulle articolazioni\n• Buono per riscaldamento\n• Facilita conversazione (se leggero)\n\n⚠️ **Errori comuni**:\n• Curvare la schiena\n• Usare resistenza troppo alta\n• Non scaldarsi prima"
+                };
+            }
+            
+            if (message.includes('ellittica') || message.includes('elliptical') || message.includes('ellittico')) {
+                return {
+                    text: "L'Ellittica per cardio completo:\n\n🎯 **Setup**:\n• Regola pedali e manubri\n• Scegli programma adatto\n• Mantieni postura eretta\n\n🎯 **Esecuzione**:\n• Muovi braccia e gambe simultaneamente\n• Mantieni ritmo costante\n• Respira regolarmente\n• Monitora resistenza e velocità\n\n💡 **Benefici**:\n• Movimento naturale\n• Coinvolge tutto il corpo\n• Basso impatto sulle articolazioni\n\n⚠️ **Consigli**:\n• Non aggrapparti ai manubri\n• Mantieni core attivo\n• Varia intensità per risultati migliori"
+                };
+            }
+            
+            // Additional muscle group suggestions
+            if (message.includes('braccia') || message.includes('arms') || message.includes('bicipiti') || message.includes('tricipiti')) {
+                const armResponses = [
+                    "Per sviluppare le braccia, combina esercizi composti e di isolamento:\n\n💪 **Bicipiti**:\n• Curl con Bilanciere\n• Curl con Manubri\n• Hammer Curl\n• Trazioni (coinvolgono anche bicipiti)\n\n💪 **Tricipiti**:\n• Estensioni con Manubrio\n• Push-down al Cavo\n• Dips\n• French Press\n\n🔄 **Allenamento bilanciato**:\n• 2-3 esercizi per gruppo muscolare\n• 3-4 serie da 8-12 ripetizioni\n• Riposo 60-90 secondi tra serie\n\nRicorda: le braccia crescono con esercizi pesanti e buona alimentazione!",
+                    "Ecco esercizi eccellenti per braccia potenti:\n\n🏋️ **Biceps**:\n• Barbell Curls\n• Dumbbell Curls\n• Concentration Curls\n• Chin-ups\n\n🏋️ **Triceps**:\n• Tricep Dips\n• Skull Crushers\n• Cable Pushdowns\n• Close-grip Bench\n\n💡 **Pro tip**: Finisci con esercizi di isolamento per la pump massima!",
+                    "Per braccia da urlo:\n\n💥 **Bicipiti**:\n• EZ Bar Curls\n• Preacher Curls\n• Hammer Curls\n• 21s (metodo avanzato)\n\n💥 **Tricipiti**:\n• Overhead Extensions\n• Kickbacks\n• Rope Pushdowns\n• Diamond Push-ups\n\nCombina volume e intensità per risultati esplosivi!"
+                ];
+                return {
+                    text: armResponses[Math.floor(Math.random() * armResponses.length)]
+                };
+            }
+            
+            if (message.includes('gambe') || message.includes('legs') || message.includes('quadricipiti') || message.includes('cosce') || message.includes('gambe inferiori')) {
+                const legResponses = [
+                    "Le gambe sono il gruppo muscolare più grande! Ecco gli esercizi fondamentali:\n\n🦵 **Quadricipiti**:\n• Squat\n• Leg Press\n• Affondi\n• Leg Extension\n\n🦵 **Posteriori della coscia**:\n• Stacco Rumeno\n• Leg Curl\n• Good Morning\n• Ponte Iperesteso\n\n🦵 **Polpacci**:\n• Alzate sulle punte\n• Calf Machine\n• Farmer Walk\n\n💡 **Consiglio**: Allenale 1-2 volte a settimana con carichi pesanti per stimolare la crescita!",
+                    "Esercizi top per gambe massicce:\n\n🏋️ **Quads**:\n• Back Squat\n• Front Squat\n• Walking Lunges\n• Bulgarian Split Squat\n\n🏋️ **Hamstrings**:\n• Romanian Deadlift\n• Lying Leg Curl\n• Glute-Ham Raise\n• Nordic Hamstring Curl\n\n🏋️ **Calves**:\n• Standing Calf Raise\n• Seated Calf Raise\n• Donkey Calf Raise\n\nLe gambe richiedono dedizione, ma i risultati sono spettacolari!",
+                    "Per gambe che impressionano:\n\n💪 **Quadricipiti**:\n• Hack Squat\n• Sissy Squat\n• Step-ups\n• Wall Sit\n\n💪 **Ischiocrurali**:\n• Swiss Ball Leg Curl\n• Single-leg RDL\n• Sliding Leg Curl\n• Box Jumps\n\n💪 **Polpacci**:\n• Calf Press on Leg Press\n• Jump Rope\n• Hill Sprints\n\nVaria gli esercizi per evitare plateau!"
+                ];
+                return {
+                    text: legResponses[Math.floor(Math.random() * legResponses.length)]
+                };
+            }
+            
+            if (message.includes('spalle') || message.includes('shoulders') || message.includes('deltoidi') || message.includes('spalle larghe')) {
+                const shoulderResponses = [
+                    "Spalle larghe e definite con questi esercizi:\n\n🏋️ **Deltoidi anteriori**:\n• Military Press\n• Alzate Frontali\n• Panca Inclinata\n\n🏋️ **Deltoidi laterali**:\n• Alzate Laterali\n• Alzate Laterali con Cavo\n• Arnold Press\n\n🏋️ **Deltoidi posteriori**:\n• Alzate Posteriori\n• Face Pull\n• Rematore Inverso\n\n⚖️ **Bilanciamento**: Non trascurare i posteriori per evitare squilibri!",
+                    "Esercizi per spalle 3D:\n\n🏋️ **Front Delts**:\n• Dumbbell Press\n• Front Raise\n• Incline Bench Press\n\n🏋️ **Side Delts**:\n• Lateral Raise\n• Upright Row\n• Machine Shoulder Press\n\n🏋️ **Rear Delts**:\n• Rear Delt Fly\n• Face Pulls\n• Reverse Pec Deck\n\nLe spalle hanno bisogno di attenzione a tutti e 3 i fasci!",
+                    "Per spalle da fighter:\n\n💥 **Anteriore**:\n• Push Press\n• Pike Push-ups\n• Handstand Push-ups\n\n💥 **Laterale**:\n• Dumbbell Lateral Raise\n• Cable Lateral Raise\n• Leaning Lateral Raise\n\n💥 **Posteriore**:\n• Bent-over Reverse Fly\n• Seated Rear Delt Raise\n• Band Pull-aparts\n\nMobilità + forza = spalle sane!"
+                ];
+                return {
+                    text: shoulderResponses[Math.floor(Math.random() * shoulderResponses.length)]
+                };
+            }
+            
+            if (message.includes('addominali') || message.includes('abs') || message.includes('core') || message.includes('addome')) {
+                const absResponses = [
+                    "Addominali visibili con esercizi mirati e deficit calorico:\n\n🔥 **Esercizi base**:\n• Crunch\n• Plank\n• Russian Twist\n• Mountain Climbers\n\n🔥 **Esercizi avanzati**:\n• Hanging Leg Raise\n• Dragon Flag\n• Ab Wheel Rollout\n• L-Sit\n\n💡 **Consigli**:\n• Combina con esercizi composti\n• Riduci il grasso corporeo per visibilità\n• 3-4 serie da 15-30 secondi/ripetizioni\n• Allenali 2-3 volte a settimana",
+                    "Core forte e addominali definiti:\n\n🏋️ **Upper Abs**:\n• Sit-ups\n• Leg Raises\n• V-ups\n• Bicycle Crunches\n\n🏋️ **Lower Abs**:\n• Flutter Kicks\n• Scissor Kicks\n• Reverse Crunches\n• Captain's Chair\n\n🏋️ **Obliques**:\n• Side Planks\n• Woodchoppers\n• Russian Twists\n• Heel Touches\n\nIl core è la base di tutto!",
+                    "Per addominali da copertina:\n\n💪 **Rettangolare**:\n• Crunches\n• Cable Crunches\n• Machine Crunches\n• Ab Roller\n\n💪 **Trasverso**:\n• Planks\n• Bird Dogs\n• Dead Bugs\n• Pallof Press\n\n💪 **Obliqui**:\n• Side Crunches\n• Spiderman Crunches\n• Windshield Wipers\n• Copenhagen Plank\n\nAlimentazione + esercizi = risultati!"
+                ];
+                return {
+                    text: absResponses[Math.floor(Math.random() * absResponses.length)]
+                };
+            }
+            
+            // Home workout Schede with variety
+            if (message.includes('casa') || message.includes('home') || message.includes('domicilio') || message.includes('senza attrezzi')) {
+                const homeSchede = [
+                    {
+                        text: "Ecco una scheda efficace per allenarti a casa senza attrezzi:",
+                        template: {
+                            id: 'ai_home_' + Date.now(),
+                            name: '🏠 Allenamento Casa Base',
+                            exercises: [
+                                { name: 'Push-up', sets: 3, reps: 15, weight: 0 },
+                                { name: 'Squat a Corpo Libero', sets: 3, reps: 20, weight: 0 },
+                                { name: 'Plank', sets: 3, reps: 60, weight: 0 },
+                                { name: 'Burpees', sets: 3, reps: 10, weight: 0 },
+                                { name: 'Mountain Climbers', sets: 3, reps: 30, weight: 0 },
+                                { name: 'Jumping Jacks', sets: 3, reps: 30, weight: 0 }
+                            ]
+                        }
+                    },
+                    {
+                        text: "Allenamento casalingo con focus su forza e resistenza:",
+                        template: {
+                            id: 'ai_home_' + Date.now(),
+                            name: '🏠 Forza & Resistenza',
+                            exercises: [
+                                { name: 'Diamond Push-ups', sets: 4, reps: 12, weight: 0 },
+                                { name: 'Bodyweight Squats', sets: 4, reps: 15, weight: 0 },
+                                { name: 'Superman Holds', sets: 3, reps: 30, weight: 0 },
+                                { name: 'Lunges', sets: 3, reps: 10, weight: 0 },
+                                { name: 'Plank', sets: 3, reps: 45, weight: 0 },
+                                { name: 'Burpees', sets: 3, reps: 8, weight: 0 }
+                            ]
+                        }
+                    },
+                    {
+                        text: "Scheda HIIT per casa - alta intensità, risultati rapidi:",
+                        template: {
+                            id: 'ai_home_' + Date.now(),
+                            name: '🏠 HIIT Explosion',
+                            exercises: [
+                                { name: 'Push-ups', sets: 4, reps: 20, weight: 0 },
+                                { name: 'Jump Squats', sets: 4, reps: 15, weight: 0 },
+                                { name: 'Mountain Climbers', sets: 4, reps: 40, weight: 0 },
+                                { name: 'Burpees', sets: 4, reps: 12, weight: 0 },
+                                { name: 'High Knees', sets: 4, reps: 30, weight: 0 },
+                                { name: 'Plank Jacks', sets: 4, reps: 20, weight: 0 }
+                            ]
+                        }
+                    }
+                ];
+                return homeTemplates[Math.floor(Math.random() * homeTemplates.length)];
+            }
+            
+            // General advice responses
+            if (message.includes('dieta') || message.includes('alimentazione') || message.includes('mangiare') || message.includes('nutrizione')) {
+                const dietResponses = [
+                    "L'alimentazione è fondamentale! Ecco i principi base:\n\n🥗 **Per la massa muscolare**:\n• Surplus calorico di 300-500 kcal\n• 1.6-2.2g di proteine per kg di peso\n• Carboidrati intorno agli allenamenti\n\n🔥 **Per la definizione**:\n• Deficit calorico di 300-500 kcal\n• Mantieni alte le proteine (2-2.5g/kg)\n• Riduci gradualmente carboidrati e grassi\n\n💡 **Consigli generali**:\n• Bevi almeno 2-3L di acqua al giorno\n• Mangia ogni 3-4 ore\n• Priorità a cibi integrali e non processati",
+                    "Alimentazione per risultati ottimali:\n\n🏋️ **Bulk**:\n• 2500-3000 kcal giornaliere\n• Proteine: 2g/kg\n• Carboidrati: 4-5g/kg\n• Grassi: 1g/kg\n\n🔥 **Cut**:\n• 1800-2200 kcal giornaliere\n• Proteine: 2.2g/kg\n• Carboidrati: 2-3g/kg\n• Grassi: 0.8g/kg\n\n🍎 **Cibi consigliati**:\n• Pollo, tacchino, pesce\n• Riso, patate dolci, avena\n• Uova, latte, yogurt greco\n• Frutta, verdura, noci",
+                    "Guida alimentare per bodybuilding:\n\n🥩 **Proteine**:\n• Carne magra, pesce, uova\n• Latticini, legumi, tofu\n• Proteine in polvere (whey/casein)\n\n🍚 **Carboidrati**:\n• Cereali integrali\n• Frutta e verdura\n• Tuberi (patate, riso)\n\n🥑 **Grassi**:\n• Avocado, noci, semi\n• Olio d'oliva, pesce grasso\n• Burro di arachidi\n\nRicorda: 80% dieta, 20% allenamento!"
+                ];
+                return {
+                    text: dietResponses[Math.floor(Math.random() * dietResponses.length)]
+                };
+            }
+            
+            if (message.includes('recupero') || message.includes('riposo') || message.includes('recovery') || message.includes('stanchezza')) {
+                const recoveryResponses = [
+                    "Il recupero è quando cresci davvero! 💪\n\n😴 **Sonno**:\n• 7-9 ore per notte\n• Qualità del sonno > quantità\n• Routine serale costante\n\n⏰ **Riposo tra allenamenti**:\n• 48-72h per lo stesso gruppo muscolare\n• Giorni di riposo attivo (camminata, yoga)\n• Ascolta il tuo corpo\n\n🧘 **Gestione dello stress**:\n• Meditazione o tecniche di rilassamento\n• Hobby e attività piacevoli\n• Evita sovrallenamento\n\nRicorda: i muscoli crescono durante il riposo, non durante l'allenamento!",
+                    "Recupero intelligente per risultati massimi:\n\n💤 **Sonno profondo**:\n• Orario fisso ogni notte\n• Stanza buia e fresca\n• Niente schermi 1h prima\n\n🛀 **Recupero attivo**:\n• Camminate leggere\n• Stretching e mobilità\n• Massaggi e foam rolling\n\n🍽️ **Nutrizione**:\n• Proteine post-allenamento\n• Carboidrati per ricaricare glicogeno\n• Anti-infiammatori naturali\n\nSegni di sovrallenamento: fatica cronica, dolori articolari, calo prestazioni!",
+                    "Strategie di recupero avanzate:\n\n🔄 **Active Recovery**:\n• Allenamenti leggeri\n• Nuoto o bici facile\n• Yoga e pilates\n\n🧊 **Terapie**:\n• Bagni ghiacciati\n• Sauna infrarossi\n• Massaggi sportivi\n\n📊 **Monitoraggio**:\n• Frequenza cardiaca a riposo\n• Peso corporeo\n• Livelli di energia\n\nIl recupero ottimale = progressi costanti!"
+                ];
+                return {
+                    text: recoveryResponses[Math.floor(Math.random() * recoveryResponses.length)]
+                };
+            }
+            
+            // Default responses
+            const defaultResponses = [
+                "Interessante domanda! Potresti essere più specifico? Sono qui per aiutarti con allenamenti, esercizi, tecnica e consigli fitness.",
+                "Sono specializzato in fitness e allenamento. Puoi chiedermi di creare schede, suggerire esercizi o dare consigli sulla tecnica!",
+                "Non sono sicuro di aver capito. Prova a chiedermi qualcosa come 'Crea una scheda per i pettorali' o 'Come migliorare lo squat'.",
+                "Sono qui per aiutarti con tutto ciò che riguarda il fitness! Chiedi pure di schede, esercizi, tecnica o consigli nutrizionali."
+            ];
+            
+            return {
+                text: defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
+            };
+        }
+
+        function useAITemplate(templateId) {
+            // Find the template in the AI messages
+            const messages = document.querySelectorAll('.ai-template-preview');
+            let templateData = null;
+            
+            messages.forEach(preview => {
+                const button = preview.querySelector('.ai-use-template-btn');
+                if (button && button.getAttribute('onclick').includes(templateId)) {
+                    const name = preview.querySelector('h4').textContent.replace('🏋️ ', '');
+                    const exercises = [];
+                    
+                    preview.querySelectorAll('.ai-template-exercises li').forEach(li => {
+                        const text = li.textContent;
+                        const parts = text.split(' - ');
+                        const name = parts[0];
+                        const details = parts[1];
+                        
+                        // Parse "3 serie × 10 reps @ 50kg"
+                        const match = details.match(/(\d+) serie × (\d+) reps @ (\d+(?:\.\d+)?)kg/);
+                        if (match) {
+                            exercises.push({
+                                name: name,
+                                sets: parseInt(match[1]),
+                                reps: parseInt(match[2]),
+                                weight: parseFloat(match[3])
+                            });
+                        }
+                    });
+                    
+                    templateData = { name, exercises };
+                }
+            });
+            
+            if (templateData) {
+                // Add to custom Schede
+                const newId = 'ai_Scheda_' + Date.now();
+                customSchede[newId] = templateData;
+                saveSchede();
+                
+                // Update UI
+                renderSchedaButtons();
+                renderSchedaEditors();
+                
+                // Switch to workout page and load the Scheda
+                showPage('workout');
+                loadScheda(newId);
+                
+                // Show success message
+                addAIMessage(`✅ Scheda "${SchedaData.name}" aggiunto con successo! L'ho caricato nella tua pagina workout.`, 'assistant');
+            }
+        }
+
         // AUTOCOMPLETAMENTO
         function setupAutocomplete() {
             const exerciseInput = document.getElementById('exerciseNameInput');
-            const templateInput = document.getElementById('templateExerciseNameInput');
+            const SchedaInput = document.getElementById('SchedaExerciseNameInput');
             const exerciseSuggestions = document.getElementById('exerciseSuggestions');
-            const templateSuggestions = document.getElementById('templateExerciseSuggestions');
+            const Schedeuggestions = document.getElementById('SchedaExerciseSuggestions');
 
             setupInputAutocomplete(exerciseInput, exerciseSuggestions);
-            setupInputAutocomplete(templateInput, templateSuggestions);
+            setupInputAutocomplete(SchedaInput, Schedeuggestions);
         }
 
         function setupInputAutocomplete(input, suggestionsContainer) {
@@ -1048,8 +2122,16 @@
         }
 
         function getExerciseSuggestions(query) {
-            const existingExercises = Object.keys(exerciseData);
-            return existingExercises
+            const allExercises = [];
+            workoutHistory.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    if (!allExercises.includes(exercise.name)) {
+                        allExercises.push(exercise.name);
+                    }
+                });
+            });
+            
+            return allExercises
                 .filter(exercise => exercise.toLowerCase().includes(query))
                 .sort()
                 .slice(0, 6);
@@ -1118,177 +2200,78 @@
             document.getElementById(pageId + 'Page').classList.add('active');
             document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
             
-            // Refresh content based on page
-            if (pageId === 'templates') {
-                renderTemplateEditors();
-            } else if (pageId === 'progress') {
-                renderProgress();
-            } else if (pageId === 'history') {
-                renderHistory();
-                renderCalendar();
+            // Update charts when showing progress page
+            if (pageId === 'progress') {
+                setTimeout(() => {
+                    updateExerciseFilterOptions();
+                    updateProgressCharts();
+                }, 100);
             }
-        }
-
-        // TEMPLATE FUNCTIONS
-        function renderTemplateButtons() {
-            const container = document.getElementById('templateButtons');
-            container.innerHTML = Object.entries(customTemplates).map(([id, template]) => `
-                <button class="template-btn" data-template="${id}">
-                    ${template.name}
-                    <button class="template-edit-btn" onclick="event.stopPropagation(); editTemplate('${id}')">✏️</button>
-                </button>
-            `).join('');
-
-            document.querySelectorAll('[data-template]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const template = this.getAttribute('data-template');
-                    loadTemplate(template);
-                });
-            });
-        }
-
-        function renderTemplateEditors() {
-            const container = document.getElementById('templateEditorsList');
-            container.innerHTML = Object.entries(customTemplates).map(([id, template]) => `
-                <div class="template-editor">
-                    <h3>⚙️ ${template.name}</h3>
-                    <div class="template-info">
-                        <input type="text" class="modal-input" value="${template.name}" 
-                               onchange="updateTemplateName('${id}', this.value)" 
-                               placeholder="Nome template">
-                    </div>
-                    <button class="add-template-exercise-btn" onclick="showAddTemplateExercise('${id}')">
-                        ➕ Aggiungi Esercizio
-                    </button>
-                    <div class="template-exercises">
-                        ${template.exercises.map((exercise, index) => `
-                            <div class="template-exercise-item">
-                                <div class="template-exercise-info">
-                                    <div class="template-exercise-name">${exercise.name}</div>
-                                    <div class="template-exercise-details">${exercise.sets} serie × ${exercise.reps} reps @ ${exercise.weight}kg</div>
-                                </div>
-                                <div class="template-exercise-controls">
-                                    <button class="template-exercise-btn" onclick="moveTemplateExercise('${id}', ${index}, -1)">↑</button>
-                                    <button class="template-exercise-btn" onclick="moveTemplateExercise('${id}', ${index}, 1)">↓</button>
-                                    <button class="template-exercise-btn delete" onclick="removeTemplateExercise('${id}', ${index})">🗑️</button>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function editTemplate(templateId) {
-            showPage('templates');
-        }
-
-        function updateTemplateName(templateId, newName) {
-            customTemplates[templateId].name = newName;
-            saveTemplates();
-            renderTemplateButtons();
-        }
-
-        function showAddTemplateExercise(templateId) {
-            currentEditingTemplate = templateId;
-            document.getElementById('templateExerciseModal').classList.add('show');
-        }
-
-        function confirmAddTemplateExercise() {
-            const name = document.getElementById('templateExerciseNameInput').value.trim();
-            const sets = parseInt(document.getElementById('templateExerciseSetsInput').value) || 3;
-            const reps = parseInt(document.getElementById('templateExerciseRepsInput').value) || 10;
-            const weight = parseFloat(document.getElementById('templateExerciseWeightInput').value) || 20;
-
-            if (!name || !currentEditingTemplate) return;
-
-            const newExercise = { name, sets, reps, weight };
-            customTemplates[currentEditingTemplate].exercises.push(newExercise);
-            
-            saveTemplates();
-            renderTemplateEditors();
-            renderTemplateButtons();
-            hideModal();
-        }
-
-        function moveTemplateExercise(templateId, index, direction) {
-            const exercises = customTemplates[templateId].exercises;
-            const newIndex = index + direction;
-            
-            if (newIndex >= 0 && newIndex < exercises.length) {
-                [exercises[index], exercises[newIndex]] = [exercises[newIndex], exercises[index]];
-                saveTemplates();
-                renderTemplateEditors();
-                renderTemplateButtons();
-            }
-        }
-
-        function removeTemplateExercise(templateId, index) {
-            customTemplates[templateId].exercises.splice(index, 1);
-            saveTemplates();
-            renderTemplateEditors();
-            renderTemplateButtons();
-        }
-
-        function saveTemplates() {
-            localStorage.setItem('customTemplates', JSON.stringify(customTemplates));
         }
 
         // WORKOUT FUNCTIONS
         function updateWorkoutDate() {
             const today = new Date();
-            document.getElementById('workoutDate').textContent = 
-                today.toLocaleDateString('it-IT', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
-            document.getElementById('workoutDateInput').value = today.toISOString().split('T')[0];
-        }
-
-        function loadTemplate(templateId) {
-            if (customTemplates[templateId]) {
-                currentExercises = customTemplates[templateId].exercises.map(ex => ({
-                    ...ex,
-                    id: Date.now() + Math.random(),
-                    notes: ''
-                }));
-                
-                renderExercises();
-                document.getElementById('workoutTitle').textContent = customTemplates[templateId].name;
-            }
-        }
-
-        // FUNZIONE COMMENTATA - Non carica automaticamente workout esistenti
-        /*
-        function loadTodayWorkout() {
-            const today = new Date().toDateString();
-            const todayWorkout = workoutHistory.find(w => 
-                new Date(w.date).toDateString() === today
-            );
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('workoutDate').textContent = today.toLocaleDateString('it-IT', options);
             
-            if (todayWorkout) {
-                currentExercises = todayWorkout.exercises || [];
-                document.getElementById('workoutTitle').textContent = todayWorkout.title || 'Allenamento di Oggi';
-                renderExercises();
-            }
+            // Set default date in save modal
+            const dateInput = document.getElementById('workoutDateInput');
+            dateInput.value = today.toISOString().split('T')[0];
         }
-        */
+
+        function showAddExerciseModal() {
+            document.getElementById('exerciseModal').classList.add('show');
+            document.getElementById('exerciseNameInput').focus();
+        }
+
+        function confirmAddExercise() {
+            const name = document.getElementById('exerciseNameInput').value.trim();
+            if (!name) {
+                alert('Inserisci il nome dell\'esercizio');
+                return;
+            }
+
+            const exercise = {
+                id: Date.now(),
+                name: name,
+                sets: 3,
+                reps: 10,
+                weight: 20,
+                notes: ''
+            };
+
+            currentExercises.push(exercise);
+            renderExercises();
+            hideModal();
+            
+            // Clear input
+            document.getElementById('exerciseNameInput').value = '';
+        }
+
+        function hideModal() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
 
         function renderExercises() {
             const container = document.getElementById('exercisesList');
-            const saveBtn = document.getElementById('saveWorkoutBtn');
             
             if (currentExercises.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🏋️</div>
-                        <div class="empty-state-title">Inizia il tuo allenamento</div>
-                        <div>Scegli un template o aggiungi un esercizio</div>
+                        <div class="empty-state-icon">🧾</div>
+                        <div class="empty-state-title">Nessun esercizio</div>
+                        <div>Aggiungi un esercizio o carica un Scheda</div>
                     </div>
                 `;
-                saveBtn.style.display = 'none';
+                document.getElementById('saveWorkoutBtn').style.display = 'none';
                 return;
             }
 
@@ -1299,49 +2282,60 @@
                         <div class="exercise-controls">
                             <button class="control-btn" onclick="moveExercise(${index}, -1)">↑</button>
                             <button class="control-btn" onclick="moveExercise(${index}, 1)">↓</button>
+                            <button class="control-btn" onclick="duplicateExercise(${index})">📋</button>
                             <button class="control-btn delete" onclick="removeExercise(${index})">🗑️</button>
                         </div>
                     </div>
                     <div class="exercise-inputs">
                         <div class="input-group">
-                            <div class="input-label">Serie</div>
+                            <label class="input-label">Serie</label>
                             <input type="number" class="input-field" value="${exercise.sets}" 
-                                   onchange="updateExercise(${index}, 'sets', this.value)">
+                                   onchange="updateExercise(${index}, 'sets', this.value)" min="1">
                         </div>
                         <div class="input-group">
-                            <div class="input-label">Reps</div>
+                            <label class="input-label">Reps</label>
                             <input type="number" class="input-field" value="${exercise.reps}" 
-                                   onchange="updateExercise(${index}, 'reps', this.value)">
+                                   onchange="updateExercise(${index}, 'reps', this.value)" min="1">
                         </div>
                         <div class="input-group">
-                            <div class="input-label">Kg</div>
-                            <input type="number" class="input-field" value="${exercise.weight}" step="0.5"
-                                   onchange="updateExercise(${index}, 'weight', this.value)">
+                            <label class="input-label">Peso (kg)</label>
+                            <input type="number" class="input-field" value="${exercise.weight}" 
+                                   onchange="updateExercise(${index}, 'weight', this.value)" min="0" step="0.5">
                         </div>
                     </div>
                     <div class="notes-section">
-                        <textarea class="notes-input" placeholder="Note..." 
-                                  onchange="updateExercise(${index}, 'notes', this.value)">${exercise.notes || ''}</textarea>
+                        <textarea class="notes-input" placeholder="Note per questo esercizio..." 
+                                  onchange="updateExercise(${index}, 'notes', this.value)">${exercise.notes}</textarea>
                     </div>
                 </div>
             `).join('');
 
-            saveBtn.style.display = 'block';
+            document.getElementById('saveWorkoutBtn').style.display = 'block';
         }
 
         function updateExercise(index, field, value) {
-            if (currentExercises[index]) {
-                currentExercises[index][field] = field === 'notes' ? value : (Number(value) || 0);
+            if (field === 'sets' || field === 'reps') {
+                currentExercises[index][field] = parseInt(value) || 1;
+            } else if (field === 'weight') {
+                currentExercises[index][field] = parseFloat(value) || 0;
+            } else {
+                currentExercises[index][field] = value;
             }
         }
 
         function moveExercise(index, direction) {
             const newIndex = index + direction;
-            if (newIndex >= 0 && newIndex < currentExercises.length) {
-                [currentExercises[index], currentExercises[newIndex]] = 
-                [currentExercises[newIndex], currentExercises[index]];
-                renderExercises();
-            }
+            if (newIndex < 0 || newIndex >= currentExercises.length) return;
+            
+            [currentExercises[index], currentExercises[newIndex]] = [currentExercises[newIndex], currentExercises[index]];
+            renderExercises();
+        }
+
+        function duplicateExercise(index) {
+            const exercise = { ...currentExercises[index] };
+            exercise.id = Date.now();
+            currentExercises.splice(index + 1, 0, exercise);
+            renderExercises();
         }
 
         function removeExercise(index) {
@@ -1349,316 +2343,723 @@
             renderExercises();
         }
 
-        // PROGRESS FUNCTIONS
-        function renderProgress() {
-            const container = document.getElementById('progressList');
-            
-            if (Object.keys(exerciseData).length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📈</div>
-                        <div class="empty-state-title">Nessun progresso ancora</div>
-                        <div>Completa alcuni allenamenti per vedere i tuoi progressi</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = Object.entries(exerciseData)
-                .map(([exerciseName, data]) => {
-                    const latest = data[data.length - 1];
-                    const previous = data.length > 1 ? data[data.length - 2] : null;
-                    
-                    let trend = 'stable';
-                    let trendText = 'Stabile';
-                    
-                    if (previous) {
-                        if (latest.weight > previous.weight) {
-                            trend = 'up';
-                            trendText = `+${(latest.weight - previous.weight).toFixed(1)}kg`;
-                        } else if (latest.weight < previous.weight) {
-                            trend = 'down';
-                            trendText = `${(latest.weight - previous.weight).toFixed(1)}kg`;
-                        }
-                    }
-
-                    const maxWeight = Math.max(...data.map(d => d.weight));
-                    const totalSessions = data.length;
-
-                    return `
-                        <div class="progress-card">
-                            <div class="progress-header">
-                                <div class="progress-title">${exerciseName}</div>
-                                <div class="progress-trend trend-${trend}">${trendText}</div>
-                            </div>
-                            <div class="progress-stats">
-                                <div>
-                                    <div class="stat-value">${latest.weight}kg</div>
-                                    <div class="stat-label">Attuale</div>
-                                </div>
-                                <div>
-                                    <div class="stat-value">${maxWeight}kg</div>
-                                    <div class="stat-label">Max</div>
-                                </div>
-                                <div>
-                                    <div class="stat-value">${totalSessions}</div>
-                                    <div class="stat-label">Sessioni</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-        }
-
-        // CALENDAR FUNCTIONS
-        function renderCalendar() {
-            const container = document.getElementById('calendarGrid');
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth();
-            
-            document.getElementById('calendarTitle').textContent = 
-                currentCalendarDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
-
-            const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const startDate = new Date(firstDay);
-            startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-            let html = '';
-            
-            // Day headers
-            dayHeaders.forEach(day => {
-                html += `<div class="calendar-day-header">${day}</div>`;
-            });
-
-            // Calendar days
-            const today = new Date();
-            for (let i = 0; i < 42; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                
-                const isToday = currentDate.toDateString() === today.toDateString();
-                const isCurrentMonth = currentDate.getMonth() === month;
-                const hasWorkout = workoutHistory.some(w => 
-                    new Date(w.date).toDateString() === currentDate.toDateString()
-                );
-
-                let classes = 'calendar-day';
-                if (isToday) classes += ' today';
-                if (hasWorkout) classes += ' has-workout';
-                if (!isCurrentMonth) classes += ' other-month';
-
-                html += `<div class="${classes}" onclick="selectCalendarDay('${currentDate.toISOString()}')">${currentDate.getDate()}</div>`;
-            }
-
-            container.innerHTML = html;
-        }
-
-        function changeMonth(direction) {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
-            renderCalendar();
-        }
-
-        function selectCalendarDay(dateString) {
-            const selectedDate = new Date(dateString);
-            const workout = workoutHistory.find(w => 
-                new Date(w.date).toDateString() === selectedDate.toDateString()
-            );
-
-            if (workout) {
-                showWorkoutDetails(workout);
-            } else {
-                if (confirm(`Aggiungere un allenamento per il ${selectedDate.toLocaleDateString('it-IT')}?`)) {
-                    document.getElementById('workoutDateInput').value = selectedDate.toISOString().split('T')[0];
-                    showSaveWorkoutModal();
-                }
-            }
-        }
-
-        function showWorkoutDetails(workout) {
-            const exercisesList = workout.exercises.map(ex => 
-                `${ex.name}: ${ex.sets}x${ex.reps} @ ${ex.weight}kg`
-            ).join('\n');
-            
-            alert(`📅 ${new Date(workout.date).toLocaleDateString('it-IT')}\n🏋️ ${workout.title}\n⏱️ ${workout.duration} minuti\n📊 Volume: ${workout.totalVolume}kg\n\nEsercizi:\n${exercisesList}${workout.notes ? '\n\nNote: ' + workout.notes : ''}`);
-        }
-
-        // HISTORY FUNCTIONS
-        function renderHistory() {
-            const container = document.getElementById('historyList');
-            
-            if (workoutHistory.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📅</div>
-                        <div class="empty-state-title">Nessun allenamento salvato</div>
-                        <div>I tuoi allenamenti appariranno qui</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = workoutHistory.slice(0, 20).map(workout => {
-                const date = new Date(workout.date);
-                const exerciseCount = workout.exercises.length;
-                const volume = workout.totalVolume || 0;
-
-                return `
-                    <div class="history-item" onclick="showWorkoutDetails(${JSON.stringify(workout).replace(/"/g, '&quot;')})">
-                        <div class="history-content">
-                            <h3>${date.toLocaleDateString('it-IT', { 
-                                weekday: 'short', 
-                                day: 'numeric', 
-                                month: 'short' 
-                            })} - ${workout.title}</h3>
-                            <div class="history-summary">
-                                ${exerciseCount} esercizi • ${volume.toLocaleString()}kg volume
-                                ${workout.notes ? ' • ' + workout.notes.substring(0, 30) + '...' : ''}
-                            </div>
-                        </div>
-                        <div class="history-duration">${workout.duration}min</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // MODAL FUNCTIONS  
-        function showAddExerciseModal() {
-            document.getElementById('exerciseModal').classList.add('show');
-            document.getElementById('exerciseNameInput').focus();
-        }
-
         function showSaveWorkoutModal() {
             document.getElementById('saveModal').classList.add('show');
-        }
-
-        function hideModal() {
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.classList.remove('show');
-            });
-            
-            // Clear inputs
-            document.getElementById('exerciseNameInput').value = '';
-            document.getElementById('templateExerciseNameInput').value = '';
-            document.getElementById('templateExerciseSetsInput').value = '';
-            document.getElementById('templateExerciseRepsInput').value = '';
-            document.getElementById('templateExerciseWeightInput').value = '';
-            document.getElementById('durationInput').value = '';
-            document.getElementById('notesInput').value = '';
-            
-            // Hide suggestions
-            hideSuggestions(document.getElementById('exerciseSuggestions'));
-            hideSuggestions(document.getElementById('templateExerciseSuggestions'));
-            
-            currentEditingTemplate = null;
-        }
-
-        function confirmAddExercise() {
-            const name = document.getElementById('exerciseNameInput').value.trim();
-            if (!name) {
-                alert('Inserisci il nome dell\'esercizio');
-                return;
-            }
-
-            const newExercise = {
-                id: Date.now(),
-                name: name,
-                sets: 3,
-                reps: 10,
-                weight: 20,
-                notes: ''
-            };
-
-            currentExercises.push(newExercise);
-            renderExercises();
-            hideModal();
+            document.getElementById('durationInput').focus();
         }
 
         function confirmSaveWorkout() {
-            const workoutDate = document.getElementById('workoutDateInput').value;
-            const duration = document.getElementById('durationInput').value || 60;
-            const notes = document.getElementById('notesInput').value || '';
-            const title = document.getElementById('workoutTitle').textContent;
+            // CORREZIONE BUG 1: Gestione corretta della data
+            const workoutDateInput = document.getElementById('workoutDateInput').value;
+            if (!workoutDateInput) {
+                alert('Seleziona una data per l\'allenamento');
+                return;
+            }
+            
+            const duration = parseInt(document.getElementById('durationInput').value) || 60;
+            const notes = document.getElementById('notesInput').value.trim();
 
-            const workout = {
-                id: Date.now(),
-                date: workoutDate ? new Date(workoutDate + 'T12:00:00').toISOString() : new Date().toISOString(),
-                title: title,
-                exercises: [...currentExercises],
-                duration: Number(duration),
-                notes: notes,
-                totalVolume: currentExercises.reduce((sum, ex) => sum + (ex.sets * ex.reps * ex.weight), 0)
-            };
-
-            // Remove existing workout for same day
-            workoutHistory = workoutHistory.filter(w => 
-                new Date(w.date).toDateString() !== new Date(workout.date).toDateString()
-            );
-
-            workoutHistory.unshift(workout);
-            workoutHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-            localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
-
-            // Update exercise data for progress tracking
-            currentExercises.forEach(exercise => {
-                if (!exerciseData[exercise.name]) {
-                    exerciseData[exercise.name] = [];
-                }
-                exerciseData[exercise.name].push({
-                    date: workout.date,
-                    sets: exercise.sets,
-                    reps: exercise.reps,
-                    weight: exercise.weight,
-                    volume: exercise.sets * exercise.reps * exercise.weight
-                });
-                exerciseData[exercise.name].sort((a, b) => new Date(a.date) - new Date(b.date));
-            });
-
-            localStorage.setItem('exerciseData', JSON.stringify(exerciseData));
-
-            // Reset current workout if it's today
-            const today = new Date().toDateString();
-            if (new Date(workout.date).toDateString() === today) {
-                currentExercises = [];
-                renderExercises();
+            if (currentExercises.length === 0) {
+                alert('Aggiungi almeno un esercizio prima di salvare');
+                return;
             }
 
-            updateStats();
-            renderCalendar();
-            renderProgress();
-            renderHistory();
-            hideModal();
+            const workout = {
+                id: Date.now() + Math.random(), // CORREZIONE BUG 2: ID univoco
+                date: workoutDateInput, // Usa direttamente il valore dell'input (formato YYYY-MM-DD)
+                exercises: currentExercises.map(ex => ({ ...ex })),
+                duration: duration,
+                notes: notes
+            };
 
-            alert('💪 Allenamento salvato con successo!');
+            workoutHistory.push(workout);
+            localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+
+            // Reset current workout
+            currentExercises = [];
+            renderExercises();
+            
+            // Update other views
+            updateStats();
+            renderHistory();
+            renderProgress();
+            renderCalendar();
+            updateExerciseFilterOptions();
+
+            hideModal();
         }
 
+        // TEMPLATE FUNCTIONS
+        function renderSchedaButtons() {
+            const container = document.getElementById('SchedaButtons');
+            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => `
+                <button class="template-btn" data-template="${id}">
+                    ${Scheda.name}
+                    <button class="template-edit-btn" onclick="event.stopPropagation(); editScheda('${id}')">✏️</button>
+                    <button class="template-delete-btn" onclick="event.stopPropagation(); deleteScheda('${id}')">🗑️</button>
+                </button>
+            `).join('');
+
+            document.querySelectorAll('[data-template]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const template = this.getAttribute('data-template');
+                    loadScheda(Scheda);
+                });
+            });
+        }
+
+        function loadScheda(SchedaId) {
+            const Scheda = customSchede[SchedaId];
+            if (!Scheda) return;
+
+            currentExercises = Scheda.exercises.map(ex => ({
+                id: Date.now() + Math.random(),
+                name: ex.name,
+                sets: ex.sets,
+                reps: ex.reps,
+                weight: ex.weight,
+                notes: ''
+            }));
+
+            renderExercises();
+        }
+
+        function renderSchedaEditors() {
+            const container = document.getElementById('SchedaEditorsList');
+            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => `
+                <div class="template-editor">
+                    <h3>⚙️ ${Scheda.name}</h3>
+                    <div class="template-info">
+                        <input type="text" class="modal-input" value="${Scheda.name}" 
+                               onchange="updateSchedaName('${id}', this.value)" 
+                               placeholder="Nome Template">
+                    </div>
+                    <button class="add-template-exercise-btn" onclick="showAddSchedaExercise('${id}')">
+                        ➕ Aggiungi Esercizio
+                    </button>
+                    <div class="template-exercises">
+                        ${Scheda.exercises.map((exercise, index) => `
+                            <div class="template-exercise-item">
+                                <div class="template-exercise-info">
+                                    <div class="template-exercise-name">${exercise.name}</div>
+                                    <div class="template-exercise-details">${exercise.sets} serie × ${exercise.reps} reps @ ${exercise.weight}kg</div>
+                                </div>
+                                <div class="template-exercise-controls">
+                                    <button class="template-exercise-btn" onclick="moveSchedaExercise('${id}', ${index}, -1)">↑</button>
+                                    <button class="template-exercise-btn" onclick="moveSchedaExercise('${id}', ${index}, 1)">↓</button>
+                                    <button class="template-exercise-btn delete" onclick="removeSchedaExercise('${id}', ${index})">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editScheda(SchedaId) {
+            showPage('Schede');
+        }
+
+        function deleteScheda(SchedaId) {
+            if (confirm('Sei sicuro di voler eliminare questo Scheda?')) {
+                delete customSchede[SchedaId];
+                saveSchede();
+                renderSchedaButtons();
+                renderSchedaEditors();
+            }
+        }
+
+        function showAddSchedaModal() {
+            document.getElementById('newSchedaModal').classList.add('show');
+            document.getElementById('newSchedaNameInput').focus();
+        }
+
+        function confirmAddScheda() {
+            const name = document.getElementById('newSchedaNameInput').value.trim();
+            if (!name) {
+                alert('Inserisci il nome del Scheda');
+                return;
+            }
+
+            const newId = 'Scheda_' + Date.now();
+            customSchede[newId] = {
+                name: name,
+                exercises: []
+            };
+
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+            hideModal();
+        }
+
+        function updateSchedaName(SchedaId, newName) {
+            customSchede[SchedaId].name = newName;
+            saveSchede();
+            renderSchedaButtons();
+        }
+
+        function showAddSchedaExercise(SchedaId) {
+            currentEditingScheda = SchedaId;
+            document.getElementById('SchedaExerciseModal').classList.add('show');
+        }
+
+        function confirmAddSchedaExercise() {
+            const name = document.getElementById('SchedaExerciseNameInput').value.trim();
+            const sets = parseInt(document.getElementById('SchedaExerciseSetsInput').value) || 3;
+            const reps = parseInt(document.getElementById('SchedaExerciseRepsInput').value) || 10;
+            const weight = parseFloat(document.getElementById('SchedaExerciseWeightInput').value) || 20;
+
+            if (!name || !currentEditingScheda) return;
+
+            customSchede[currentEditingScheda].exercises.push({
+                name: name,
+                sets: sets,
+                reps: reps,
+                weight: weight
+            });
+
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+            hideModal();
+
+            // Clear inputs
+            document.getElementById('SchedaExerciseNameInput').value = '';
+            document.getElementById('SchedaExerciseSetsInput').value = '';
+            document.getElementById('SchedaExerciseRepsInput').value = '';
+            document.getElementById('SchedaExerciseWeightInput').value = '';
+        }
+
+        function moveSchedaExercise(SchedaId, index, direction) {
+            const exercises = customSchede[SchedaId].exercises;
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= exercises.length) return;
+            
+            [exercises[index], exercises[newIndex]] = [exercises[newIndex], exercises[index]];
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+        }
+
+        function removeSchedaExercise(SchedaId, index) {
+            customSchede[SchedaId].exercises.splice(index, 1);
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+        }
+
+        function saveSchede() {
+            localStorage.setItem('customSchede', JSON.stringify(customSchede));
+        }
+
+        // PROGRESS FUNCTIONS
+        function renderProgress() {
+            const container = document.getElementById('progressList');
+            const progressData = calculateProgressFromHistory();
+            
+            if (Object.keys(progressData).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-title">Nessun progresso</div>
+                        <div>Salva alcuni allenamenti per vedere i tuoi progressi</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const cards = Object.entries(progressData).map(([exerciseName, data]) => {
+                const latest = data[data.length - 1];
+                const previous = data.length > 1 ? data[data.length - 2] : latest;
+                const maxWeight = Math.max(...data.map(d => d.weight));
+                const avgVolume = Math.round(data.reduce((sum, d) => sum + d.volume, 0) / data.length);
+                
+                let trend = 'stable';
+                let trendText = 'Stabile';
+                if (latest.weight > previous.weight) {
+                    trend = 'up';
+                    trendText = '+' + (latest.weight - previous.weight) + 'kg';
+                } else if (latest.weight < previous.weight) {
+                    trend = 'down';
+                    trendText = '-' + (previous.weight - latest.weight) + 'kg';
+                }
+
+                return `
+                    <div class="progress-card">
+                        <div class="progress-header">
+                            <div class="progress-title">${exerciseName}</div>
+                            <div class="progress-trend trend-${trend}">${trendText}</div>
+                        </div>
+                        <div class="progress-stats">
+                            <div>
+                                <div class="stat-value">${latest.weight}kg</div>
+                                <div class="stat-label">Ultimo peso</div>
+                            </div>
+                            <div>
+                                <div class="stat-value">${maxWeight}kg</div>
+                                <div class="stat-label">Peso massimo</div>
+                            </div>
+                            <div>
+                                <div class="stat-value">${avgVolume}kg</div>
+                                <div class="stat-label">Volume medio</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = cards;
+        }
+
+        function createWeightChart() {
+            const ctx = document.getElementById('weightChart');
+            if (!ctx) return;
+
+            // Distruggi il grafico esistente se presente
+            if (weightChart) {
+                weightChart.destroy();
+                weightChart = null;
+            }
+
+            const progressData = getFilteredProgressData();
+            
+            if (Object.keys(progressData).length === 0) {
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                return;
+            }
+
+            const datasets = Object.entries(progressData).map(([exerciseName, data], index) => {
+                const colors = ['#4a5568', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac'];
+                const color = colors[index % colors.length];
+                
+                return {
+                    label: exerciseName,
+                    data: data.map(session => ({
+                        x: new Date(session.date).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }),
+                        y: session.weight
+                    })),
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false
+                };
+            });
+
+            weightChart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: Object.keys(progressData).length > 1,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Peso (kg)',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            grid: { color: '#e2e8f0' }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            grid: { color: '#e2e8f0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createVolumeChart() {
+            const ctx = document.getElementById('volumeChart');
+            if (!ctx) return;
+
+            // Distruggi il grafico esistente se presente
+            if (volumeChart) {
+                volumeChart.destroy();
+                volumeChart = null;
+            }
+
+            const progressData = getFilteredProgressData();
+            
+            if (Object.keys(progressData).length === 0) {
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                return;
+            }
+            
+            // Aggrega volume per data
+            const volumeByDate = {};
+            Object.entries(progressData).forEach(([exerciseName, data]) => {
+                data.forEach(session => {
+                    const date = new Date(session.date).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+                    if (!volumeByDate[date]) volumeByDate[date] = 0;
+                    volumeByDate[date] += session.volume;
+                });
+            });
+
+            const sortedDates = Object.keys(volumeByDate).sort((a, b) => {
+                // Ordina per data effettiva
+                const dateA = Object.values(progressData)[0]?.find(d => 
+                    new Date(d.date).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) === a
+                )?.date || '2024-01-01';
+                const dateB = Object.values(progressData)[0]?.find(d => 
+                    new Date(d.date).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' }) === b
+                )?.date || '2024-01-01';
+                return new Date(dateA) - new Date(dateB);
+            });
+
+            volumeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Volume Totale (kg)',
+                        data: sortedDates.map(date => volumeByDate[date]),
+                        backgroundColor: '#48bb78',
+                        borderColor: '#38a169',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Volume (kg)',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            grid: { color: '#e2e8f0' }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // CORREZIONE BUG 3: Funzione di filtraggio migliorata
+        function getFilteredProgressData() {
+            const timeFilter = document.getElementById('timeFilter').value;
+            const exerciseFilter = document.getElementById('exerciseFilter').value;
+            
+            let progressData = calculateProgressFromHistory();
+            
+            // Filtra per esercizio PRIMA del filtraggio temporale
+            if (exerciseFilter && exerciseFilter !== '') {
+                const filteredData = {};
+                if (progressData[exerciseFilter]) {
+                    filteredData[exerciseFilter] = progressData[exerciseFilter];
+                }
+                progressData = filteredData;
+            }
+            
+            // Filtra per tempo
+            if (timeFilter !== 'all') {
+                const daysBack = parseInt(timeFilter);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+                cutoffDate.setHours(0, 0, 0, 0); // Normalizza a mezzanotte
+                
+                Object.keys(progressData).forEach(exerciseName => {
+                    progressData[exerciseName] = progressData[exerciseName].filter(session => {
+                        const sessionDate = new Date(session.date);
+                        sessionDate.setHours(0, 0, 0, 0);
+                        return sessionDate >= cutoffDate;
+                    });
+                });
+            }
+            
+            return progressData;
+        }
+
+        // CORREZIONE BUG 3: Funzione di aggiornamento grafici migliorata
+        function updateProgressCharts() {
+            // Distruggi i grafici esistenti se presenti
+            if (weightChart) {
+                weightChart.destroy();
+                weightChart = null;
+            }
+            if (volumeChart) {
+                volumeChart.destroy();
+                volumeChart = null;
+            }
+            
+            // Ricrea i grafici con i dati filtrati
+            createWeightChart();
+            createVolumeChart();
+        }
+
+        // CORREZIONE BUG 3: Aggiorna opzioni filtro esercizi
+        function updateExerciseFilterOptions() {
+            const exerciseFilter = document.getElementById('exerciseFilter');
+            const currentValue = exerciseFilter.value;
+            
+            // Ottieni tutti gli esercizi unici dalla cronologia
+            const allExercises = new Set();
+            workoutHistory.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    allExercises.add(exercise.name);
+                });
+            });
+            
+            // Ricostruisci le opzioni
+            exerciseFilter.innerHTML = '<option value="">Tutti gli esercizi</option>' +
+                Array.from(allExercises).sort().map(exercise => 
+                    `<option value="${exercise}">${exercise}</option>`
+                ).join('');
+            
+            // Ripristina il valore selezionato se ancora valido
+            if (currentValue && allExercises.has(currentValue)) {
+                exerciseFilter.value = currentValue;
+            }
+        }
+
+        function calculateProgressFromHistory() {
+            const exerciseProgress = {};
+            
+            workoutHistory.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    if (!exerciseProgress[exercise.name]) {
+                        exerciseProgress[exercise.name] = [];
+                    }
+                    
+                    exerciseProgress[exercise.name].push({
+                        date: workout.date,
+                        sets: exercise.sets,
+                        reps: exercise.reps,
+                        weight: exercise.weight,
+                        volume: exercise.sets * exercise.reps * exercise.weight
+                    });
+                });
+            });
+            
+            Object.keys(exerciseProgress).forEach(exerciseName => {
+                exerciseProgress[exerciseName].sort((a, b) => new Date(a.date) - new Date(b.date));
+            });
+            
+            return exerciseProgress;
+        }
+
+        // STATS FUNCTIONS
         function updateStats() {
             const totalWorkouts = workoutHistory.length;
-            document.getElementById('totalWorkouts').textContent = `${totalWorkouts} workout`;
-
-            let streak = 0;
-            const today = new Date();
+            document.getElementById('totalWorkouts').textContent = `${totalWorkouts} workout${totalWorkouts !== 1 ? 's' : ''}`;
             
-            for (let i = 0; i < 30; i++) {
-                const checkDate = new Date(today);
-                checkDate.setDate(today.getDate() - i);
-                
-                const hasWorkout = workoutHistory.some(w => 
-                    new Date(w.date).toDateString() === checkDate.toDateString()
-                );
-                
-                if (hasWorkout) {
+            calculateStreak();
+        }
+
+        function calculateStreak() {
+            if (workoutHistory.length === 0) {
+                document.getElementById('currentStreak').textContent = '0 giorni';
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalizza a mezzanotte locale
+
+            const datesSet = new Set(workoutHistory.map(w => w.date));
+            
+            let streak = 0;
+            let checkDate = new Date(today);
+            
+            // Se oggi non c'è allenamento, inizia da ieri
+            const todayISO = checkDate.toISOString().split('T')[0];
+            if (!datesSet.has(todayISO)) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (true) {
+                const iso = checkDate.toISOString().split('T')[0];
+                if (datesSet.has(iso)) {
                     streak++;
-                } else if (i > 0) {
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
                     break;
                 }
             }
-            
+
             document.getElementById('currentStreak').textContent = `${streak} giorni`;
         }
 
-        console.log('GymTracker FINALE - Clean Start - caricato con successo!');
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            if (workoutHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-title">Nessuna cronologia</div>
+                        <div>Salva i tuoi allenamenti per visualizzarli qui</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // mostra dall'ultimo al primo
+            const items = [...workoutHistory].reverse().map(w => {
+                const totalExercises = w.exercises.length;
+                const totalVolume = w.exercises.reduce((s, e) => s + (e.sets * e.reps * (e.weight || 0)), 0);
+                
+                // CORREZIONE BUG 1: Gestione corretta della data per la visualizzazione
+                const workoutDate = new Date(w.date + 'T00:00:00'); // Forza il fuso orario locale
+                
+                return `
+                    <div class="history-item" data-id="${w.id}">
+                        <div class="history-content">
+                            <h3>${workoutDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</h3>
+                            <div class="history-summary">${totalExercises} esercizi • ${w.duration || 0} min • Volume ${Math.round(totalVolume)}kg</div>
+                        </div>
+                        <div style="display:flex;align-items:center;">
+                            <div class="history-duration">${w.duration || 0}m</div>
+                            <button class="history-delete-btn" onclick="deleteHistoryItem('${w.id}'); event.stopPropagation();">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = items;
+        }
+
+        // CORREZIONE BUG 2: Eliminazione basata su ID univoco con event.stopPropagation()
+        function deleteHistoryItem(id) {
+            if (!confirm('Eliminare questa voce dalla cronologia?')) return;
+            
+            const index = workoutHistory.findIndex(workout => workout.id == id);
+            if (index !== -1) {
+                workoutHistory.splice(index, 1);
+                localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+                updateStats();
+                renderHistory();
+                renderProgress();
+                updateExerciseFilterOptions();
+                if (weightChart || volumeChart) {
+                    updateProgressCharts();
+                }
+                renderCalendar();
+            }
+        }
+
+        // CALENDAR - CORREZIONE BUG 1: Gestione corretta delle date nel calendario
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const title = document.getElementById('calendarTitle');
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            title.textContent = firstDay.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+            // giorni della settimana header
+            const dayHeaders = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+            const headerHtml = dayHeaders.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+            // calcola offset (coerente con lunedì come primo giorno)
+            const startOffset = (firstDay.getDay() + 6) % 7; // converti domenica(0)->6, lunedì(1)->0
+
+            let cells = '';
+            // giorni del mese precedente
+            const prevMonthDays = startOffset;
+            const prevMonthLastDate = new Date(year, month, 0).getDate();
+            for (let i = prevMonthDays - 1; i >= 0; i--) {
+                const d = prevMonthLastDate - i;
+                cells += `<div class="calendar-day other-month">${d}</div>`;
+            }
+
+            // giorni del mese corrente
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const dayDate = new Date(year, month, d);
+                // CORREZIONE CALENDARIO: Usa il formato locale per il confronto
+                const iso = dayDate.getFullYear() + '-' + 
+                           String(dayDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(dayDate.getDate()).padStart(2, '0');
+                const classes = ['calendar-day'];
+                
+                // CORREZIONE: Confronto date normalizzate
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                dayDate.setHours(0, 0, 0, 0);
+                
+                if (dayDate.getTime() === today.getTime()) {
+                    classes.push('today');
+                }
+                
+                // check if has workout
+                const hasWorkout = workoutHistory.some(w => w.date === iso);
+                if (hasWorkout) classes.push('has-workout');
+
+                cells += `<div class="${classes.join(' ')}" onclick="openHistoryForDate('${iso}')">${d}</div>`;
+            }
+
+            // fill remaining cells to complete the grid
+            const remaining = (Math.ceil((startOffset + lastDay.getDate()) / 7) * 7) - (startOffset + lastDay.getDate());
+            for (let i = 1; i <= remaining; i++) {
+                cells += `<div class="calendar-day other-month">${i}</div>`;
+            }
+
+            grid.innerHTML = headerHtml + cells;
+        }
+
+        function changeMonth(offset) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        function openHistoryForDate(isoDate) {
+            // mostra i workout di quel giorno nella sezione history (o finestra)
+            const workouts = workoutHistory.filter(w => w.date === isoDate);
+            if (workouts.length === 0) {
+                alert('Nessun allenamento per questa data');
+                return;
+            }
+
+            // scorri i workout per quella data (primo)
+            const w = workouts[0];
+            // CORREZIONE BUG 1: Gestione corretta della data per la visualizzazione
+            const workoutDate = new Date(w.date + 'T00:00:00');
+            let msg = `Data: ${workoutDate.toLocaleDateString('it-IT')}\nDurata: ${w.duration || 0} min\n\nEsercizi:\n`;
+            w.exercises.forEach(e => {
+                msg += `• ${e.name} — ${e.sets}x${e.reps} @ ${e.weight}kg\n`;
+            });
+            if (w.notes) msg += `\nNote: ${w.notes}`;
+            alert(msg);
+        }
+
+        // INIZIALIZZAZIONE FINALE
+        updateStats();
+        renderProgress();
+        renderHistory();
+        renderCalendar();
     </script>
+
 </body>
 </html>
