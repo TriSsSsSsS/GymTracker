@@ -1953,7 +1953,7 @@
         let currentSchedaName = null;
         
         // Sistema codici per schede protette
-    let unlockedCodes = [];
+    let unlockedCodes = JSON.parse(localStorage.getItem('unlockedCodes') || '[]');
         const codeMappings = {
             'Giulia24': ['giulia24_giorno1', 'giulia24_giorno2', 'giulia24_giorno3'],
             'Giovanna0': ['giovanna0_alta_a', 'giovanna0_bassa_a', 'giovanna0_alta_b', 'giovanna0_bassa_b']
@@ -1979,7 +1979,7 @@
                     { name: 'Chest Fly', sets: 3, reps: 15, weight: 25 },
                     { name: 'Alzate Laterali (Spalle)', sets: 3, reps: 15, weight: 8 },
                     { name: 'Pushdown Tricipiti', sets: 3, reps: 15, weight: 25 },
-                    { name: 'Tapis Roulant o Cyclette (Defaticamento)', sets: 1, reps: 15, weight: 0 }
+                    { name: 'Tapis Roulant', sets: 1, reps: 15, weight: 0 }
                 ]
             },
             'giulia24_giorno3': {
@@ -3628,7 +3628,8 @@
             container.innerHTML = entries.map(([id, Scheda]) => {
                 const isPersonal = id.startsWith('personal_');
                 const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
-                const showActions = !isPersonal && !isProtected;
+                const isUnlocked = unlockedCodes.some(code => codeMappings[code] && codeMappings[code].includes(id));
+                const showActions = !isPersonal && (!isProtected || isUnlocked);
 
                 return `
                     <button class="template-btn" data-template="${id}">
@@ -3734,8 +3735,20 @@
                 return;
             }
             if (confirm('Sei sicuro di voler eliminare questo Scheda?')) {
-                delete customSchede[SchedaId];
-                saveSchede();
+                if (customSchede[SchedaId]) {
+                    delete customSchede[SchedaId];
+                    saveSchede();
+                } else {
+                    // È una scheda sbloccata, rimuovi il codice
+                    const codesToRemove = new Set();
+                    Object.entries(codeMappings).forEach(([code, ids]) => {
+                        if (ids.includes(SchedaId)) {
+                            codesToRemove.add(code);
+                        }
+                    });
+                    unlockedCodes = unlockedCodes.filter(code => !codesToRemove.has(code));
+                    localStorage.setItem('unlockedCodes', JSON.stringify(unlockedCodes));
+                }
                 renderSchedaButtons();
                 renderSchedaEditors();
             }
@@ -5021,14 +5034,11 @@
                 return;
             }
 
-            // Controlla se il codice è già stato sbloccato
-            if (unlockedCodes.includes(code)) {
-                alert(`Il codice "${code}" è già stato sbloccato!`);
-                return;
+            // Sblocca il codice per la sessione corrente (anche se già sbloccato)
+            if (!unlockedCodes.includes(code)) {
+                unlockedCodes.push(code);
+                localStorage.setItem('unlockedCodes', JSON.stringify(unlockedCodes));
             }
-
-            // Sblocca il codice per la sessione corrente
-            unlockedCodes.push(code);
 
             renderSchedaButtons();
             renderSchedaEditors();
@@ -5198,6 +5208,21 @@
                 }
             });
 
+            // Aggiungi schede sbloccate
+            getUnlockedProtectedSchede().forEach(([key, scheda]) => {
+                const exerciseCount = scheda.exercises ? scheda.exercises.length : 0;
+                
+                container.innerHTML += `
+                    <div class="scheda-selection-item">
+                        <input type="checkbox" value="${key}" data-type="unlocked">
+                        <div class="scheda-info">
+                            <div class="scheda-name">${scheda.name} (Sbloccata)</div>
+                            <div class="scheda-details">${exerciseCount} esercizi</div>
+                        </div>
+                    </div>
+                `;
+            });
+
             document.getElementById('deleteSchedeModal').classList.add('show');
         }
 
@@ -5219,7 +5244,19 @@
             if (!confirm(confirmMessage)) return;
 
             selectedSchede.forEach(scheda => {
-                delete customSchede[scheda.key];
+                if (scheda.type === 'unlocked') {
+                    // Rimuovi il codice che sblocca questa scheda
+                    const codesToRemove = new Set();
+                    Object.entries(codeMappings).forEach(([code, ids]) => {
+                        if (ids.includes(scheda.key)) {
+                            codesToRemove.add(code);
+                        }
+                    });
+                    unlockedCodes = unlockedCodes.filter(code => !codesToRemove.has(code));
+                    localStorage.setItem('unlockedCodes', JSON.stringify(unlockedCodes));
+                } else {
+                    delete customSchede[scheda.key];
+                }
             });
 
             saveSchede();
@@ -5243,3 +5280,4 @@
 
 </body>
 </html>
+
