@@ -3275,6 +3275,7 @@
                     <div class="exercise-card">
                         <div class="exercise-header">
                             <div class="exercise-name">${exercise.name}</div>
+                            <button class="control-btn video-btn" title="Video YouTube" onclick="openExerciseVideo('${exercise.name}')">🎥</button>
                             <div class="exercise-controls">
                                 <button class="${notesToggleClasses}" title="${notesToggleTitle}" onclick="toggleNotes(${index})">${notesToggleIcon}</button>
                                 <button class="control-btn" title="Sposta su" onclick="moveExercise(${index}, -1)">↑</button>
@@ -3368,6 +3369,12 @@
         function removeExercise(index) {
             currentExercises.splice(index, 1);
             renderExercises();
+        }
+
+        function openExerciseVideo(exerciseName) {
+            const searchQuery = encodeURIComponent('how to do ' + exerciseName + ' properly');
+            const youtubeUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+            window.open(youtubeUrl, '_blank');
         }
 
         function showSaveWorkoutModal() {
