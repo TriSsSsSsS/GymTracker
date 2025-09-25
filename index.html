@@ -1941,6 +1941,10 @@
         // VARIABILI GLOBALI
         let currentExercises = [];
         let workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+        
+        // Valida e pulisce workoutHistory per evitare errori
+        workoutHistory = workoutHistory.filter(w => w && typeof w.id === 'string');
+        
         let currentCalendarDate = new Date();
         let currentEditingScheda = null;
         let selectedSuggestionIndex = -1;
@@ -2209,26 +2213,31 @@
         }
 
         function initializeApp() {
-            // Inizializza allenamenti e schede di esempio
-            initializeSampleWorkouts();
-            initializeSampleSchede();
-            
-            // Carica esercizi personalizzati dal localStorage
-            const customExercises = JSON.parse(localStorage.getItem('customExercises') || '{}');
-            Object.assign(PREDEFINED_EXERCISES, customExercises);
-            
-            updateWorkoutDate();
-            updateStats();
-            
-            // Inizializza con currentExercises vuoto
-            currentExercises = [];
-            
-            renderExercises();
-            renderSchedaButtons();
-            renderSchedaEditors();
-            renderProgress();
-            renderHistory();
-            renderCalendar();
+            try {
+                // Inizializza allenamenti e schede di esempio
+                initializeSampleWorkouts();
+                initializeSampleSchede();
+
+                // Carica esercizi personalizzati dal localStorage
+                const customExercises = JSON.parse(localStorage.getItem('customExercises') || '{}');
+                Object.assign(PREDEFINED_EXERCISES, customExercises);
+
+                updateWorkoutDate();
+                updateStats();
+
+                // Inizializza con currentExercises vuoto
+                currentExercises = [];
+
+                renderExercises();
+                renderSchedaButtons();
+                renderSchedaEditors();
+                renderProgress();
+                renderHistory();
+                renderCalendar();
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione dell\'app:', error);
+                alert('Errore durante il caricamento dell\'app: ' + error.message);
+            }
         }
 
         function setupEventListeners() {
@@ -3375,7 +3384,21 @@
             const exerciseName = currentExercises[index].name;
             const searchQuery = 'how to do ' + exerciseName + ' properly';
             const youtubeUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(searchQuery);
-            window.open(youtubeUrl, '_blank');
+
+            try {
+                const newWindow = window.open(youtubeUrl, '_blank');
+                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    // Popup bloccato, apri nella stessa finestra
+                    if (confirm('Il popup è stato bloccato. Vuoi aprire YouTube in questa finestra? (perderai il workout corrente)')) {
+                        window.location.href = youtubeUrl;
+                    }
+                }
+            } catch (e) {
+                // Fallback per browser che bloccano popup
+                if (confirm('Impossibile aprire il video. Vuoi aprire YouTube in questa finestra? (perderai il workout corrente)')) {
+                    window.location.href = youtubeUrl;
+                }
+            }
         }
 
         function showSaveWorkoutModal() {
