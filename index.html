@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymTracker Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -366,7 +367,7 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
         }
 
@@ -626,6 +627,14 @@
             border-color: #4a5568;
         }
 
+        .input-hint {
+            font-size: 0.7em;
+            color: #a0aec0;
+            text-align: center;
+            margin-top: 2px;
+            display: none;
+        }
+
         .notes-section {
             padding: 12px;
             border-top: 1px solid #e2e8f0;
@@ -691,6 +700,10 @@
             .input-field {
                 padding: 6px;
                 font-size: 0.9em;
+            }
+
+            .input-hint {
+                display: block;
             }
 
             .notes-section {
@@ -1061,6 +1074,13 @@
             margin-bottom: 5px;
         }
 
+        .history-workout-name {
+            color: #4a5568;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
         .history-summary {
             color: #718096;
             font-size: 0.9em;
@@ -1279,6 +1299,82 @@
             margin-bottom: 8px;
         }
 
+        /* MUSCOLI ALLENATI SECTION */
+        .muscles-worked-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .muscles-worked-section h4 {
+            color: #2d3748;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .muscle-coverage {
+            margin-bottom: 20px;
+        }
+
+        .coverage-bar {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 24px;
+            position: relative;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .coverage-fill {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .coverage-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #2d3748;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-shadow: 0 0 2px rgba(255,255,255,0.8);
+        }
+
+        .muscles-worked h4 {
+            margin-bottom: 15px;
+        }
+
+        .muscles-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .muscle-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .no-muscles {
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+            padding: 20px;
+        }
+
         /* WORKOUT COUNTER */
         .workout-counter {
             position: absolute;
@@ -1340,6 +1436,9 @@
         <!-- Templates PAGE -->
         <div id="SchedePage" class="page">
             <button class="add-template-btn" id="addSchedaBtn">➕ Crea Nuova Scheda</button>
+            <button class="add-template-btn" id="personalSchedeBtn" style="background: #48bb78;">🔑 Schede Personali</button>
+            <button class="add-template-btn" id="downloadPdfBtn" style="background: #ed8936;">📄 Scarica PDF</button>
+            <button class="add-template-btn" id="deleteAllSchedeBtn" style="background: #e53e3e;">🗑️ Cancella Tutte le Schede</button>
             <div id="SchedaEditorsList">
                 <!-- Gli editor dei template verranno inseriti qui -->
             </div>
@@ -1381,6 +1480,11 @@
                         <canvas id="volumeChart"></canvas>
                     </div>
                 </div>
+            </div>
+
+            <!-- MUSCOLI ALLENATI -->
+            <div id="musclesWorkedContainer" class="muscles-worked-section">
+                <!-- I muscoli verranno mostrati qui -->
             </div>
 
             <div id="progressList">
@@ -1556,6 +1660,7 @@
         let selectedSuggestionIndex = -1;
         let weightChart = null;
         let volumeChart = null;
+        let currentSchedaName = null;
 
         // Schede PERSONALIZZABILI
         let customSchede = JSON.parse(localStorage.getItem('customSchede') || JSON.stringify({
@@ -1607,6 +1712,71 @@
                 ]
             }
         }));
+
+        // Schede PERSONALI (protette da codice)
+        const personalSchede = {
+            mamma1: [
+                {
+                    name: '💪 Mamma - Forza Totale',
+                    exercises: [
+                        { name: 'Panca Piana', sets: 3, reps: 8, weight: 50 },
+                        { name: 'Squat', sets: 3, reps: 10, weight: 60 },
+                        { name: 'Trazioni', sets: 3, reps: 6, weight: 0 },
+                        { name: 'Military Press', sets: 3, reps: 10, weight: 30 }
+                    ]
+                },
+                {
+                    name: '🔥 Mamma - Braccia Focus',
+                    exercises: [
+                        { name: 'Curl Bilanciere', sets: 3, reps: 12, weight: 25 },
+                        { name: 'Tricep Pushdown', sets: 3, reps: 15, weight: 25 },
+                        { name: 'Dips', sets: 3, reps: 10, weight: 0 },
+                        { name: 'Hammer Curl', sets: 3, reps: 12, weight: 20 }
+                    ]
+                },
+                {
+                    name: '🦵 Mamma - Gambe Potenti',
+                    exercises: [
+                        { name: 'Leg Press', sets: 3, reps: 15, weight: 150 },
+                        { name: 'Leg Extension', sets: 3, reps: 15, weight: 30 },
+                        { name: 'Leg Curl', sets: 3, reps: 15, weight: 25 },
+                        { name: 'Stacchi Rumeni', sets: 3, reps: 10, weight: 50 }
+                    ]
+                }
+            ],
+            papa1: [
+                {
+                    name: '🏋️ Papa - Push Day',
+                    exercises: [
+                        { name: 'Panca Piana', sets: 4, reps: 8, weight: 100 },
+                        { name: 'Panca Inclinata', sets: 3, reps: 10, weight: 80 },
+                        { name: 'Spinte Manubri', sets: 3, reps: 12, weight: 30 },
+                        { name: 'Dips', sets: 3, reps: 10, weight: 0 },
+                        { name: 'Tricep Pushdown', sets: 3, reps: 15, weight: 40 }
+                    ]
+                },
+                {
+                    name: '💪 Papa - Pull Day',
+                    exercises: [
+                        { name: 'Trazioni', sets: 4, reps: 8, weight: 0 },
+                        { name: 'Lat Machine', sets: 3, reps: 10, weight: 60 },
+                        { name: 'Rematore Bilanciere', sets: 3, reps: 10, weight: 70 },
+                        { name: 'Pulley', sets: 3, reps: 12, weight: 50 },
+                        { name: 'Curl Bilanciere', sets: 3, reps: 12, weight: 35 }
+                    ]
+                },
+                {
+                    name: '🦵 Papa - Leg Day',
+                    exercises: [
+                        { name: 'Squat', sets: 4, reps: 10, weight: 120 },
+                        { name: 'Stacchi Rumeni', sets: 3, reps: 10, weight: 100 },
+                        { name: 'Leg Press', sets: 3, reps: 15, weight: 250 },
+                        { name: 'Leg Extension', sets: 3, reps: 15, weight: 50 },
+                        { name: 'Leg Curl', sets: 3, reps: 15, weight: 45 }
+                    ]
+                }
+            ]
+        };
 
         // INIZIALIZZAZIONE
         document.addEventListener('DOMContentLoaded', function() {
@@ -1674,6 +1844,11 @@
             document.getElementById('addSchedaBtn').addEventListener('click', showAddSchedaModal);
             document.getElementById('confirmAddScheda').addEventListener('click', confirmAddScheda);
             document.getElementById('cancelAddScheda').addEventListener('click', hideModal);
+
+            // Personal Schede buttons
+            document.getElementById('personalSchedeBtn').addEventListener('click', showPersonalSchedeModal);
+            document.getElementById('downloadPdfBtn').addEventListener('click', downloadSchedePdf);
+            document.getElementById('deleteAllSchedeBtn').addEventListener('click', deleteAllSchede);
 
             // Calendar navigation
             document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
@@ -1766,9 +1941,16 @@
                     <div class="ai-template-preview">
                         <h4>🏋️ ${template.name}</h4>
                         <ul class="ai-template-exercises">
-                            ${template.exercises.map(ex => 
-                                `<li>${ex.name} - ${ex.sets} serie × ${ex.reps} reps @ ${ex.weight}kg</li>`
-                            ).join('')}
+                            ${template.exercises.map(ex => {
+                                let exerciseText = ex.name;
+                                if (ex.duration) {
+                                    exerciseText += ` - ${ex.duration}`;
+                                } else {
+                                    exerciseText += ` - ${ex.sets} serie × ${ex.reps} reps`;
+                                    if (ex.weight > 0) exerciseText += ` @ ${ex.weight}kg`;
+                                }
+                                return `<li>${exerciseText}</li>`;
+                            }).join('')}
                         </ul>
                         <button class="ai-use-template-btn" onclick="useAITemplate('${template.id}')">
                             Usa questa scheda
@@ -1801,7 +1983,7 @@
             if (message.includes('scheda') || message.includes('Scheda') || message.includes('programma')) {
                 if (message.includes('principianti') || message.includes('beginner')) {
                     return {
-                        text: "Ecco una scheda perfetta per principianti! Si concentra sui movimenti base e permette di imparare la tecnica corretta:",
+                        text: "🌟 **Ecco una scheda perfetta per principianti!**\n\n✨ Si concentra sui movimenti base e permette di imparare la tecnica corretta.\n\n💪 **Esercizi inclusi:**\n• Squat - Movimento fondamentale per gambe\n• Panca Piana - Base per il petto\n• Rematore - Per la schiena\n• Military Press - Spalle da urlo\n• Plank - Core solido\n\n🚀 **Inizia oggi e vedrai progressi incredibili!**",
                         template: {
                             id: 'ai_beginner_' + Date.now(),
                             name: '🌟 Scheda Principianti',
@@ -1816,7 +1998,7 @@
                     };
                 } else if (message.includes('push') && message.includes('pull')) {
                     return {
-                        text: "Ottima scelta! Ecco una scheda Push/Pull/Legs bilanciata per massimizzare i tuoi risultati:",
+                        text: "🔄 **Ottima scelta! Ecco una scheda Push/Pull/Legs bilanciata**\n\n💪 Per massimizzare i tuoi risultati con allenamenti equilibrati!\n\n🏋️ **Giorno Push:** Pettorali, spalle, tricipiti\n🏋️ **Giorno Pull:** Schiena, bicipiti\n🏋️ **Giorno Legs:** Gambe complete\n\n🎯 **Esercizi top:** Panca, squat, stacchi, trazioni, dips!\n\n⚡ **Pronto per risultati esplosivi?**",
                         template: {
                             id: 'ai_ppl_' + Date.now(),
                             name: '🔄 Push/Pull/Legs',
@@ -1832,7 +2014,7 @@
                     };
                 } else if (message.includes('forza') || message.includes('strength')) {
                     return {
-                        text: "Per aumentare la forza, ecco una scheda focalizzata sui grandi movimenti con carichi elevati:",
+                        text: "💥 **Per aumentare la forza, ecco una scheda focalizzata sui grandi movimenti**\n\n🏆 Con carichi elevati per risultati massimali!\n\n⚡ **Esercizi pesanti:**\n• Squat 5x5 - Gambe esplosive\n• Panca 5x5 - Petto potente\n• Stacco 5x5 - Schiena da titano\n• Military Press - Spalle forti\n\n🔥 **Diventa più forte ogni settimana!**",
                         template: {
                             id: 'ai_strength_' + Date.now(),
                             name: '💥 Forza Massimale',
@@ -1844,15 +2026,29 @@
                             ]
                         }
                     };
+                } else if (message.includes('cardio') || message.includes('running') || message.includes('corsa')) {
+                    return {
+                        text: "🏃 **Ecco una scheda cardio completa per migliorare la resistenza!**\n\n💓 **Sessione bilanciata:** Riscaldamento, lavoro principale, defaticamento\n\n🏃‍♂️ **Esercizi inclusi:**\n• Corsa leggera - Riscaldamento\n• Interval training - Bruciare calorie\n• Camminata veloce - Recupero attivo\n• Allungamenti - Recupero muscolare\n\n⏱️ **Durata:** 45-60 minuti per sessione\n\n💪 **Migliora la tua capacità cardiovascolare!**",
+                        template: {
+                            id: 'ai_cardio_' + Date.now(),
+                            name: '🏃 Cardio Session',
+                            exercises: [
+                                { name: 'Riscaldamento - Corsa leggera', sets: 1, reps: 1, weight: 0, duration: '10 min' },
+                                { name: 'Interval Training - Sprint', sets: 8, reps: 1, weight: 0, duration: '30 sec lavoro / 1 min recupero' },
+                                { name: 'Defaticamento - Camminata', sets: 1, reps: 1, weight: 0, duration: '10 min' },
+                                { name: 'Allungamenti', sets: 1, reps: 1, weight: 0, duration: '5 min' }
+                            ]
+                        }
+                    };
                 }
             }
             
             // Exercise suggestions
             if (message.includes('pettorali') || message.includes('petto') || message.includes('chest') || message.includes('torace')) {
                 const chestResponses = [
-                    "Per sviluppare i pettorali ti consiglio questi esercizi fondamentali:\n\n• **Panca Piana**: L'esercizio base per massa e forza\n• **Panca Inclinata**: Per la parte alta dei pettorali\n• **Dips**: Ottimo per la parte bassa\n• **Croci con Manubri**: Per l'isolamento e la definizione\n• **Push-up**: Perfetti per l'allenamento a casa\n\nRicorda di variare angoli e prese per uno sviluppo completo!",
-                    "Ecco i migliori esercizi per il petto:\n\n🏋️ **Panca Piana**: King of chest exercises\n🏋️ **Panca Inclinata con Manubri**: Per upper chest\n🏋️ **Dips**: Bodyweight chest destroyer\n🏋️ **Croci ai Cavi**: Per definizione\n🏋️ **Push-ups**: Sempre efficaci\n\nCombina composti e isolamento per risultati ottimali!",
-                    "Per pettorali scolpiti, ecco la mia selezione:\n\n💪 **Bench Press**: Base di tutto\n💪 **Incline Dumbbell Press**: Per la parte superiore\n💪 **Chest Dips**: Intensità massima\n💪 **Pec Deck**: Isolamento perfetto\n💪 **Diamond Push-ups**: Variante avanzata\n\nVaria i grip e gli angoli regolarmente!"
+                    "💪 **Per sviluppare i pettorali ti consiglio questi esercizi fondamentali:**\n\n🏋️ **Panca Piana**: L'esercizio base per massa e forza\n🏋️ **Panca Inclinata**: Per la parte alta dei pettorali\n🏋️ **Dips**: Ottimo per la parte bassa\n🏋️ **Croci con Manubri**: Per l'isolamento e la definizione\n🏋️ **Push-up**: Perfetti per l'allenamento a casa\n\n💡 **Ricorda**: Varia angoli e prese per uno sviluppo completo!\n\n🚀 **Pronto per un petto scolpito?**",
+                    "🏆 **Ecco i migliori esercizi per il petto:**\n\n💥 **Panca Piana**: King of chest exercises\n💥 **Panca Inclinata con Manubri**: Per upper chest\n💥 **Dips**: Bodyweight chest destroyer\n💥 **Croci ai Cavi**: Per definizione\n💥 **Push-ups**: Sempre efficaci\n\n⚡ **Combina composti e isolamento per risultati ottimali!**\n\n🔥 **Diventa il padrone del tuo petto!**",
+                    "🌟 **Per pettorali scolpiti, ecco la mia selezione:**\n\n🏋️ **Bench Press**: Base di tutto\n🏋️ **Incline Dumbbell Press**: Per la parte superiore\n🏋️ **Chest Dips**: Intensità massima\n🏋️ **Pec Deck**: Isolamento perfetto\n🏋️ **Diamond Push-ups**: Variante avanzata\n\n🎯 **Varia i grip e gli angoli regolarmente!**\n\n💪 **Il petto dei tuoi sogni ti aspetta!**"
                 ];
                 return {
                     text: chestResponses[Math.floor(Math.random() * chestResponses.length)]
@@ -2209,7 +2405,10 @@
         }
 
         function getExerciseSuggestions(query) {
-            const allExercises = [];
+            // Inizia con esercizi predefiniti
+            let allExercises = Object.keys(PREDEFINED_EXERCISES);
+            
+            // Aggiungi esercizi dalla cronologia degli allenamenti
             workoutHistory.forEach(workout => {
                 workout.exercises.forEach(exercise => {
                     if (!allExercises.includes(exercise.name)) {
@@ -2221,7 +2420,7 @@
             return allExercises
                 .filter(exercise => exercise.toLowerCase().includes(query))
                 .sort()
-                .slice(0, 6);
+                .slice(0, 8); // Aumentato a 8 suggerimenti
         }
 
         function showSuggestions(suggestions, container, input) {
@@ -2322,6 +2521,11 @@
             if (!name) {
                 alert('Inserisci il nome dell\'esercizio');
                 return;
+            }
+
+            // Se è il primo esercizio aggiunto manualmente, resetta il nome scheda
+            if (currentExercises.length === 0) {
+                currentSchedaName = null;
             }
 
             const lastData = getLastExerciseData(name);
@@ -2440,16 +2644,19 @@
                                 <label class="input-label">Serie</label>
                                 <input type="number" class="input-field" placeholder="Serie" value="${exercise.sets}" 
                                        onchange="updateExercise(${index}, 'sets', this.value)" min="1">
+                                <small class="input-hint">Serie</small>
                             </div>
                             <div class="input-group">
                                 <label class="input-label">Reps</label>
                                 <input type="number" class="input-field" placeholder="Reps" value="${exercise.reps}" 
                                        onchange="updateExercise(${index}, 'reps', this.value)" min="1">
+                                <small class="input-hint">Reps</small>
                             </div>
                             <div class="input-group">
                                 <label class="input-label">Peso (kg)</label>
                                 <input type="number" class="input-field" placeholder="Kg" value="${exercise.weight}" 
                                        onchange="updateExercise(${index}, 'weight', this.value)" min="0" step="0.5">
+                                <small class="input-hint">Kg</small>
                             </div>
                         </div>
                         <div class="${notesSectionClasses}">
@@ -2502,6 +2709,12 @@
         }
 
         function showSaveWorkoutModal() {
+            // Imposta valori di default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('workoutDateInput').value = today;
+            document.getElementById('durationInput').value = 60;
+            document.getElementById('notesInput').value = '';
+            
             document.getElementById('saveModal').classList.add('show');
             document.getElementById('durationInput').focus();
         }
@@ -2533,7 +2746,8 @@
                     notes: ex.notes || ''
                 })),
                 duration: duration,
-                notes: notes
+                notes: notes,
+                schedaName: currentSchedaName
             };
 
             workoutHistory.push(workout);
@@ -2541,6 +2755,7 @@
 
             // Reset current workout
             currentExercises = [];
+            currentSchedaName = null;
             renderExercises();
             
             // Update other views
@@ -2556,13 +2771,16 @@
         // TEMPLATE FUNCTIONS
         function renderSchedaButtons() {
             const container = document.getElementById('SchedaButtons');
-            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => `
-                <button class="template-btn" data-template="${id}">
-                    ${Scheda.name}
-                    <button class="template-edit-btn" onclick="event.stopPropagation(); editScheda('${id}')">✏️</button>
-                    <button class="template-delete-btn" onclick="event.stopPropagation(); deleteScheda('${id}')">🗑️</button>
-                </button>
-            `).join('');
+            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => {
+                const isPersonal = id.startsWith('personal_');
+                return `
+                    <button class="template-btn" data-template="${id}">
+                        ${Scheda.name}
+                        ${!isPersonal ? `<button class="template-edit-btn" onclick="event.stopPropagation(); editScheda('${id}')">✏️</button>` : ''}
+                        ${!isPersonal ? `<button class="template-delete-btn" onclick="event.stopPropagation(); deleteScheda('${id}')">🗑️</button>` : ''}
+                    </button>
+                `;
+            }).join('');
 
             document.querySelectorAll('[data-template]').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -2575,6 +2793,8 @@
         function loadScheda(SchedaId) {
             const Scheda = customSchede[SchedaId];
             if (!Scheda) return;
+
+            currentSchedaName = Scheda.name;
 
             currentExercises = Scheda.exercises.map(ex => {
                 const lastData = getLastExerciseData(ex.name);
@@ -2598,7 +2818,9 @@
 
         function renderSchedaEditors() {
             const container = document.getElementById('SchedaEditorsList');
-            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => `
+            // Filtra le schede personali (non modificabili)
+            const editableSchede = Object.entries(customSchede).filter(([id]) => !id.startsWith('personal_'));
+            container.innerHTML = editableSchede.map(([id, Scheda]) => `
                 <div class="template-editor">
                     <h3>⚙️ ${Scheda.name}</h3>
                     <div class="template-info">
@@ -2633,6 +2855,10 @@
         }
 
         function deleteScheda(SchedaId) {
+            if (SchedaId.startsWith('personal_')) {
+                alert('Questa scheda è protetta e non può essere eliminata.');
+                return;
+            }
             if (confirm('Sei sicuro di voler eliminare questo Scheda?')) {
                 delete customSchede[SchedaId];
                 saveSchede();
@@ -2997,6 +3223,347 @@
             // Ricrea i grafici con i dati filtrati
             createWeightChart();
             createVolumeChart();
+            
+            // Mostra i muscoli allenati nel periodo
+            showMusclesWorked();
+        }
+
+        // Funzione per mappare esercizi ai muscoli (gruppi semplificati)
+        function getMuscleGroupsForExercise(exerciseName) {
+            const name = exerciseName.toLowerCase();
+            
+            // Prima controlla il database predefinito
+            if (PREDEFINED_EXERCISES[name]) {
+                return [...PREDEFINED_EXERCISES[name]];
+            }
+            
+            // Fallback alla logica esistente per esercizi non nel database
+            const muscles = [];
+            
+            // Petto
+            if (name.includes('panca') || name.includes('bench') || name.includes('push') || name.includes('dips') || name.includes('petto') || name.includes('croci') || name.includes('flyes')) {
+                muscles.push('petto');
+            }
+            
+            // Dorso (schiena)
+            if (name.includes('trazioni') || name.includes('pull-ups') || name.includes('chin-ups') || name.includes('rematore') || name.includes('row') || name.includes('stacco') || name.includes('deadlift') || name.includes('lat machine') || name.includes('tirate machine') || name.includes('pulley') || name.includes('lat pulldown') || name.includes('schiena')) {
+                muscles.push('dorso');
+            }
+            
+            // Quadricipiti
+            if (name.includes('squat') || name.includes('leg press') || name.includes('pressa gambe') || name.includes('leg extension') || name.includes('estensioni gambe') || name.includes('affondi') || name.includes('lunges') || name.includes('quadricipiti')) {
+                muscles.push('quadricipiti');
+            }
+            
+            // Bicipiti femorali (ischiocrurali)
+            if (name.includes('leg curl') || name.includes('curl gambe') || name.includes('stacchi rumeni') || name.includes('romanian deadlift') || name.includes('ischiocrurali') || name.includes('bicipiti femorali')) {
+                muscles.push('bicipiti femorali');
+            }
+            
+            // Polpacci
+            if (name.includes('calf') || name.includes('polpacci') || name.includes('alzate punte')) {
+                muscles.push('polpacci');
+            }
+            
+            // Spalle
+            if (name.includes('military press') || name.includes('shoulder press') || name.includes('lateral raises') || name.includes('alzate laterali') || name.includes('rear delt') || name.includes('spalle posteriori') || name.includes('face pull') || name.includes('spalle')) {
+                muscles.push('spalle');
+            }
+            
+            // Bicipiti
+            if (name.includes('curl') || name.includes('bicipiti') || name.includes('hammer curl')) {
+                muscles.push('bicipiti');
+            }
+            
+            // Tricipiti
+            if (name.includes('tricipiti') || name.includes('pushdown') || name.includes('french press') || name.includes('estensioni') || name.includes('overhead')) {
+                muscles.push('tricipiti');
+            }
+            
+            // Addome
+            if (name.includes('plank') || name.includes('crunch') || name.includes('sit-up') || name.includes('addominali') || name.includes('core') || name.includes('abs')) {
+                muscles.push('addome');
+            }
+            
+            // Rimuovi duplicati
+            return [...new Set(muscles)];
+        }
+
+        // Lista completa di tutti i muscoli possibili (gruppi semplificati)
+        const ALL_MUSCLES = [
+            'quadricipiti', 'bicipiti femorali', 'polpacci', 'dorso', 'petto', 'spalle', 'bicipiti', 'tricipiti', 'addome'
+        ];
+
+        // Database esaustivo di esercizi predefiniti con i relativi muscoli
+        const PREDEFINED_EXERCISES = {
+            // Petto
+            'panca piana': ['petto'],
+            'panca inclinata': ['petto', 'spalle'],
+            'panca declinata': ['petto'],
+            'croci con manubri': ['petto'],
+            'croci ai cavi': ['petto'],
+            'croci machine': ['petto'],
+            'dips': ['petto', 'tricipiti'],
+            'push-ups': ['petto', 'tricipiti'],
+            'petto ai cavi': ['petto'],
+            'butterfly machine': ['petto'],
+            'pec deck': ['petto'],
+            'panca piana con bilanciere': ['petto'],
+            'panca piana con manubri': ['petto'],
+            'panca inclinata con bilanciere': ['petto', 'spalle'],
+            'panca inclinata con manubri': ['petto', 'spalle'],
+            'panca declinata con bilanciere': ['petto'],
+            'panca declinata con manubri': ['petto'],
+            'floor press': ['petto', 'tricipiti'],
+            'svenson press': ['petto'],
+            'chest press machine': ['petto'],
+            'hammer strength chest press': ['petto'],
+            'isometric chest squeeze': ['petto'],
+
+            // Dorso (schiena)
+            'stacco da terra': ['dorso', 'bicipiti femorali'],
+            'stacco rumeno': ['dorso', 'bicipiti femorali'],
+            'stacco sumo': ['dorso', 'bicipiti femorali', 'quadricipiti'],
+            'trazioni alla sbarra': ['dorso', 'bicipiti'],
+            'trazioni alla sbarra presa larga': ['dorso'],
+            'trazioni alla sbarra presa stretta': ['dorso', 'bicipiti'],
+            'rematore con bilanciere': ['dorso'],
+            'rematore con manubrio': ['dorso'],
+            'rematore con cavi': ['dorso'],
+            'rematore machine': ['dorso'],
+            'hammer strength row': ['dorso'],
+            'lat machine': ['dorso'],
+            'pulley': ['dorso'],
+            'tirate al petto': ['dorso'],
+            'tirate al petto presa larga': ['dorso'],
+            'tirate al petto presa stretta': ['dorso', 'bicipiti'],
+            'face pull': ['dorso', 'spalle'],
+            'rear delt fly': ['dorso', 'spalle'],
+            'hyperextension': ['dorso'],
+            'good morning': ['dorso'],
+            'shrugs': ['dorso', 'spalle'],
+            'barbell shrugs': ['dorso', 'spalle'],
+            'dumbbell shrugs': ['dorso', 'spalle'],
+            'rack pull': ['dorso'],
+            'deadlift deficit': ['dorso', 'bicipiti femorali'],
+            'snatch grip deadlift': ['dorso', 'spalle'],
+            'clean grip deadlift': ['dorso', 'spalle'],
+
+            // Quadricipiti
+            'squat': ['quadricipiti', 'bicipiti femorali'],
+            'front squat': ['quadricipiti', 'bicipiti femorali'],
+            'hack squat': ['quadricipiti'],
+            'leg press': ['quadricipiti'],
+            'leg press 45°': ['quadricipiti'],
+            'leg press orizzontale': ['quadricipiti'],
+            'walking lunges': ['quadricipiti', 'bicipiti femorali'],
+            'stationary lunges': ['quadricipiti', 'bicipiti femorali'],
+            'reverse lunges': ['quadricipiti', 'bicipiti femorali'],
+            'bulgarian split squat': ['quadricipiti', 'bicipiti femorali'],
+            'step up': ['quadricipiti', 'bicipiti femorali'],
+            'leg extension': ['quadricipiti'],
+            'sissy squat': ['quadricipiti'],
+            'wall sit': ['quadricipiti'],
+            'box squat': ['quadricipiti', 'bicipiti femorali'],
+            'pause squat': ['quadricipiti', 'bicipiti femorali'],
+            'zercher squat': ['quadricipiti', 'bicipiti femorali'],
+            'anderson squat': ['quadricipiti', 'bicipiti femorali'],
+            'jefferson squat': ['quadricipiti', 'bicipiti femorali'],
+
+            // Bicipiti femorali (ischiocrurali)
+            'leg curl': ['bicipiti femorali'],
+            'lying leg curl': ['bicipiti femorali'],
+            'seated leg curl': ['bicipiti femorali'],
+            'standing leg curl': ['bicipiti femorali'],
+            'romanian deadlift': ['bicipiti femorali', 'dorso'],
+            'single leg romanian deadlift': ['bicipiti femorali', 'dorso'],
+            'glute ham raise': ['bicipiti femorali'],
+            'nordic hamstring curl': ['bicipiti femorali'],
+            'stiff leg deadlift': ['bicipiti femorali', 'dorso'],
+            'deficit deadlift': ['bicipiti femorali', 'dorso'],
+            'good morning': ['bicipiti femorali', 'dorso'],
+            'hyperextension': ['bicipiti femorali', 'dorso'],
+
+            // Polpacci
+            'calf raise': ['polpacci'],
+            'standing calf raise': ['polpacci'],
+            'seated calf raise': ['polpacci'],
+            'donkey calf raise': ['polpacci'],
+            'single leg calf raise': ['polpacci'],
+            'leg press calf raise': ['polpacci'],
+            'smith machine calf raise': ['polpacci'],
+            'dumbbell calf raise': ['polpacci'],
+            'barbell calf raise': ['polpacci'],
+            'toe press': ['polpacci'],
+
+            // Spalle
+            'military press': ['spalle'],
+            'shoulder press': ['spalle'],
+            'dumbbell shoulder press': ['spalle'],
+            'barbell shoulder press': ['spalle'],
+            'arnold press': ['spalle'],
+            'lateral raises': ['spalle'],
+            'dumbbell lateral raises': ['spalle'],
+            'cable lateral raises': ['spalle'],
+            'machine lateral raises': ['spalle'],
+            'front raises': ['spalle'],
+            'dumbbell front raises': ['spalle'],
+            'cable front raises': ['spalle'],
+            'rear delt fly': ['spalle', 'dorso'],
+            'face pull': ['spalle', 'dorso'],
+            'rear delt machine': ['spalle', 'dorso'],
+            'upright row': ['spalle'],
+            'barbell upright row': ['spalle'],
+            'dumbbell upright row': ['spalle'],
+            'shrug': ['spalle', 'dorso'],
+            'barbell shrug': ['spalle', 'dorso'],
+            'dumbbell shrug': ['spalle', 'dorso'],
+            'clean and press': ['spalle', 'quadricipiti'],
+            'push press': ['spalle', 'quadricipiti'],
+            'jerk': ['spalle', 'quadricipiti'],
+
+            // Bicipiti
+            'curl': ['bicipiti'],
+            'barbell curl': ['bicipiti'],
+            'dumbbell curl': ['bicipiti'],
+            'hammer curl': ['bicipiti'],
+            'preacher curl': ['bicipiti'],
+            'concentration curl': ['bicipiti'],
+            'cable curl': ['bicipiti'],
+            'machine curl': ['bicipiti'],
+            'zottman curl': ['bicipiti'],
+            'spider curl': ['bicipiti'],
+            'drag curl': ['bicipiti'],
+            'reverse curl': ['bicipiti'],
+            'wrist curl': ['bicipiti'],
+
+            // Tricipiti
+            'triceps extension': ['tricipiti'],
+            'overhead triceps extension': ['tricipiti'],
+            'dumbbell overhead extension': ['tricipiti'],
+            'cable overhead extension': ['tricipiti'],
+            'skull crushers': ['tricipiti'],
+            'lying triceps extension': ['tricipiti'],
+            'close grip bench press': ['tricipiti', 'petto'],
+            'triceps pushdown': ['tricipiti'],
+            'cable pushdown': ['tricipiti'],
+            'rope pushdown': ['tricipiti'],
+            'overhead rope extension': ['tricipiti'],
+            'diamond push-ups': ['tricipiti', 'petto'],
+            'kickbacks': ['tricipiti'],
+            'dumbbell kickbacks': ['tricipiti'],
+            'cable kickbacks': ['tricipiti'],
+            'french press': ['tricipiti'],
+
+            // Addome
+            'crunch': ['addome'],
+            'sit-up': ['addome'],
+            'leg raise': ['addome'],
+            'hanging leg raise': ['addome'],
+            'plank': ['addome'],
+            'side plank': ['addome'],
+            'russian twist': ['addome'],
+            'bicycle crunch': ['addome'],
+            'mountain climber': ['addome'],
+            'flutter kick': ['addome'],
+            'heel touch': ['addome'],
+            'v-up': ['addome'],
+            'dragon flag': ['addome'],
+            'ab wheel rollout': ['addome'],
+            'cable crunch': ['addome'],
+            'machine crunch': ['addome'],
+            'decline crunch': ['addome'],
+            'reverse crunch': ['addome'],
+            'windshield wiper': ['addome'],
+            'l-sit': ['addome'],
+            'hollow body hold': ['addome']
+        };
+
+        // Mostra i muscoli allenati nel periodo selezionato
+        function showMusclesWorked() {
+            const timeFilter = document.getElementById('timeFilter').value;
+            const exerciseFilter = document.getElementById('exerciseFilter').value;
+            
+            // Filtra i workout per periodo
+            let filteredWorkouts = [...workoutHistory];
+            
+            if (timeFilter !== 'all') {
+                const daysBack = parseInt(timeFilter);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+                
+                filteredWorkouts = filteredWorkouts.filter(workout => {
+                    const workoutDate = new Date(workout.date);
+                    return workoutDate >= cutoffDate;
+                });
+            }
+            
+            // Filtra per esercizio se selezionato
+            if (exerciseFilter && exerciseFilter !== '') {
+                filteredWorkouts = filteredWorkouts.filter(workout => 
+                    workout.exercises.some(ex => ex.name === exerciseFilter)
+                );
+            }
+            
+            // Conta la frequenza di ogni muscolo allenato
+            const muscleCounts = {};
+            ALL_MUSCLES.forEach(muscle => muscleCounts[muscle] = 0);
+            
+            filteredWorkouts.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    const muscles = getMuscleGroupsForExercise(exercise.name);
+                    muscles.forEach(muscle => {
+                        muscleCounts[muscle]++;
+                    });
+                });
+            });
+            
+            // Trova il massimo numero di allenamenti per un muscolo
+            const maxCount = Math.max(...Object.values(muscleCounts));
+            
+            // Calcola la percentuale
+            const totalMuscles = ALL_MUSCLES.length;
+            const workedMuscles = Object.values(muscleCounts).filter(count => count > 0).length;
+            const percentage = totalMuscles > 0 ? Math.round((workedMuscles / totalMuscles) * 100) : 0;
+            
+            // Funzione per calcolare il colore basato sull'intensità
+            function getMuscleColor(count) {
+                if (count === 0) return '#ff6b6b'; // Rosso per non allenato
+                
+                const intensity = count / maxCount;
+                
+                if (intensity >= 0.75) return '#22c55e'; // Verde bellissimo (molto allenato)
+                if (intensity >= 0.5) return '#16a34a'; // Verde normale (abbastanza allenato)
+                if (intensity >= 0.25) return '#ea580c'; // Arancione (poco allenato)
+                return '#dc2626'; // Rosso scuro (molto poco allenato)
+            }
+            
+            // Mostra i risultati
+            const container = document.getElementById('musclesWorkedContainer');
+            const periodText = timeFilter === 'all' ? 'tutta la cronologia' : 
+                             timeFilter === '7' ? 'ultima settimana' :
+                             timeFilter === '30' ? 'ultimo mese' :
+                             `ultimi ${timeFilter} giorni`;
+            
+            container.innerHTML = `
+                <div class="muscle-coverage">
+                    <h4>💪 Copertura Muscolare (${periodText})</h4>
+                    <div class="coverage-bar">
+                        <div class="coverage-fill" style="width: ${percentage}%"></div>
+                        <span class="coverage-text">${workedMuscles}/${totalMuscles} muscoli (${percentage}%)</span>
+                    </div>
+                </div>
+                <div class="muscles-worked">
+                    <h4>Muscoli Allenati</h4>
+                    <div class="muscles-grid">
+                        ${ALL_MUSCLES.map(muscle => {
+                            const count = muscleCounts[muscle];
+                            const color = getMuscleColor(count);
+                            return `<span class="muscle-tag" style="background: ${color};" title="${muscle}: ${count} allenamenti">${muscle}</span>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
         }
 
         // CORREZIONE BUG 3: Aggiorna opzioni filtro esercizi
@@ -3021,6 +3588,8 @@
             // Ripristina il valore selezionato se ancora valido
             if (currentValue && allExercises.has(currentValue)) {
                 exerciseFilter.value = currentValue;
+            } else {
+                exerciseFilter.value = '';
             }
         }
 
@@ -3109,6 +3678,9 @@
                 const totalExercises = w.exercises.length;
                 const totalVolume = w.exercises.reduce((s, e) => s + (e.sets * e.reps * (e.weight || 0)), 0);
                 
+                // Genera nome workout se non presente
+                const workoutName = w.schedaName || (w.exercises.length > 0 ? `${w.exercises[0].name} Workout` : 'Allenamento Personalizzato');
+                
                 // CORREZIONE BUG 1: Gestione corretta della data per la visualizzazione
                 const workoutDate = new Date(w.date + 'T00:00:00'); // Forza il fuso orario locale
                 
@@ -3116,6 +3688,7 @@
                     <div class="history-item" data-id="${w.id}">
                         <div class="history-content">
                             <h3>${workoutDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</h3>
+                            <div class="history-workout-name">${workoutName}</div>
                             <div class="history-summary">${totalExercises} esercizi • ${w.duration || 0} min • Volume ${Math.round(totalVolume)}kg</div>
                         </div>
                         <div style="display:flex;align-items:center;">
@@ -3234,6 +3807,102 @@
             });
             if (w.notes) msg += `\nNote: ${w.notes}`;
             alert(msg);
+        }
+
+        // SCHEDE PERSONALI
+        function showPersonalSchedeModal() {
+            const code = prompt('Inserisci il codice per le schede personali:');
+            if (!code) return;
+
+            const schede = personalSchede[code];
+            if (!schede) {
+                alert('Codice non valido. Nessuna scheda aggiunta.');
+                return;
+            }
+
+            // Aggiungi le schede
+            schede.forEach(scheda => {
+                const newId = 'personal_' + code + '_' + Date.now() + Math.random();
+                customSchede[newId] = {
+                    name: scheda.name,
+                    exercises: scheda.exercises.map(ex => ({ ...ex }))
+                };
+            });
+
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+            alert(`Schede personali per "${code}" aggiunte con successo!`);
+        }
+
+        // SCARICA PDF
+        function downloadSchedePdf() {
+            if (!confirm('Vuoi scaricare tutte le schede in PDF?')) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Funzione per rimuovere emoticon e caratteri speciali
+            function cleanText(text) {
+                // Rimuovi emoticon e caratteri Unicode speciali
+                return text.replace(/[^\x20-\x7E]/g, '').trim();
+            }
+
+            // Titolo principale
+            doc.setFontSize(24);
+            doc.setTextColor(70, 130, 180); // Steel Blue
+            doc.text('GymTracker Pro - Le Mie Schede', 20, 30);
+
+            let y = 50;
+            Object.entries(customSchede).forEach(([id, scheda]) => {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 30;
+                }
+
+                // Nome scheda pulito
+                const cleanName = cleanText(scheda.name);
+                doc.setFontSize(18);
+                doc.setTextColor(34, 139, 34); // Forest Green
+                doc.text(cleanName, 20, y);
+                y += 15;
+
+                // Linea separatrice
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, y - 5, 190, y - 5);
+                y += 5;
+
+                // Esercizi puliti
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0); // Nero
+                scheda.exercises.forEach(exercise => {
+                    const cleanExerciseName = cleanText(exercise.name);
+                    const exerciseText = `${cleanExerciseName}: ${exercise.sets} serie × ${exercise.reps} reps @ ${exercise.weight}kg`;
+                    doc.text(exerciseText, 30, y);
+                    y += 8;
+                });
+
+                y += 10; // Spazio tra schede
+            });
+
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(128, 128, 128);
+            doc.text('Generato da GymTracker Pro - ' + new Date().toLocaleDateString('it-IT'), 20, 280);
+
+            doc.save('mie_schede.pdf');
+        }
+
+        // CANCELLA TUTTE LE SCHEDE
+        function deleteAllSchede() {
+            if (!confirm('ATTENZIONE: Questa azione cancellerà TUTTE le schede personalizzate (incluse quelle protette). Sei sicuro?')) return;
+            if (!confirm('Conferma definitiva: tutte le schede verranno eliminate permanentemente.')) return;
+
+            customSchede = {};
+            saveSchede();
+            renderSchedaButtons();
+            renderSchedaEditors();
+            alert('Tutte le schede sono state cancellate.');
         }
 
         // INIZIALIZZAZIONE FINALE
