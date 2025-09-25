@@ -1603,7 +1603,7 @@
         <!-- Templates PAGE -->
         <div id="SchedePage" class="page">
             <button class="add-template-btn" id="addSchedaBtn">➕ Crea Nuova Scheda</button>
-            <button class="add-template-btn" id="personalSchedeBtn" style="background: #48bb78;">🔑 Schede Personali</button>
+            <button class="add-template-btn" id="personalSchedeBtn" style="background: #48bb78;">� Sblocca Schede</button>
             <button class="add-template-btn" id="downloadPdfBtn" style="background: #ed8936;">📄 Stampa PDF schede</button>
             <button class="add-template-btn" id="deleteAllSchedeBtn" style="background: #e53e3e;">🗑️ Gestisci Schede</button>
             <div id="SchedaEditorsList">
@@ -1951,6 +1951,117 @@
         let weightChart = null;
         let volumeChart = null;
         let currentSchedaName = null;
+        
+        // Sistema codici per schede protette
+    let unlockedCodes = [];
+        const codeMappings = {
+            'Giulia24': ['giulia24_giorno1', 'giulia24_giorno2', 'giulia24_giorno3'],
+            'Giovanna0': ['giovanna0_alta_a', 'giovanna0_bassa_a', 'giovanna0_alta_b', 'giovanna0_bassa_b']
+        };
+
+        const protectedSchedeData = {
+            'giulia24_giorno1': {
+                name: '💪 Scheda Palestra G - Giorno 1: Gambe + Addome',
+                exercises: [
+                    { name: 'Tapis Roulant o Cyclette', sets: 1, reps: 15, weight: 0 },
+                    { name: 'Leg Extension', sets: 4, reps: 12, weight: 40 },
+                    { name: 'Leg Press (orizzontale)', sets: 3, reps: 12, weight: 100 },
+                    { name: 'Leg Curl', sets: 3, reps: 12, weight: 35 },
+                    { name: 'Crunch Machine', sets: 3, reps: 20, weight: 30 },
+                    { name: 'Crunch Inversi', sets: 3, reps: 20, weight: 0 }
+                ]
+            },
+            'giulia24_giorno2': {
+                name: '🏋️ Scheda Palestra G - Giorno 2: Petto + Spalle + Tricipiti',
+                exercises: [
+                    { name: 'Tapis Roulant o Cyclette', sets: 1, reps: 15, weight: 0 },
+                    { name: 'Chest Press', sets: 4, reps: 12, weight: 60 },
+                    { name: 'Chest Fly', sets: 3, reps: 15, weight: 25 },
+                    { name: 'Alzate Laterali (Spalle)', sets: 3, reps: 15, weight: 8 },
+                    { name: 'Pushdown Tricipiti', sets: 3, reps: 15, weight: 25 },
+                    { name: 'Tapis Roulant o Cyclette (Defaticamento)', sets: 1, reps: 15, weight: 0 }
+                ]
+            },
+            'giulia24_giorno3': {
+                name: '🔥 Scheda Palestra G - Giorno 3: Schiena + Bicipiti + Spalle + Addome',
+                exercises: [
+                    { name: 'Tapis Roulant o Cyclette', sets: 1, reps: 15, weight: 0 },
+                    { name: 'Lat Machine', sets: 4, reps: 12, weight: 50 },
+                    { name: 'Low Row', sets: 3, reps: 15, weight: 45 },
+                    { name: 'Curl Bicipiti', sets: 3, reps: 15, weight: 20 },
+                    { name: 'Alzate Frontali (Spalle)', sets: 3, reps: 12, weight: 10 },
+                    { name: 'Addominali a Circuito (3 esercizi diversi)', sets: 3, reps: 30, weight: 0 }
+                ]
+            },
+            'giovanna0_alta_a': {
+                name: '💪 Giovanna0 - Giorno 1: Alta A',
+                exercises: [
+                    { name: 'Camminata o Ellittica (Riscaldamento)', sets: 1, reps: 5, weight: 0 },
+                    { name: 'Lat Machine presa classica (Riscaldamento)', sets: 1, reps: 12, weight: 30 },
+                    { name: 'Lat Machine presa classica', sets: 3, reps: 12, weight: 45 },
+                    { name: 'Pulley', sets: 3, reps: 12, weight: 35 },
+                    { name: 'Chest Fly (Riscaldamento)', sets: 1, reps: 15, weight: 20 },
+                    { name: 'Chest Fly', sets: 3, reps: 15, weight: 25 },
+                    { name: 'Panca Piana con Bilanciere', sets: 3, reps: 12, weight: 50 },
+                    { name: 'Curl al Cavo Basso', sets: 3, reps: 15, weight: 20 },
+                    { name: 'Plank Laterale', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Tapis Roulant o Cyclette (Cardio)', sets: 1, reps: 20, weight: 0 },
+                    { name: 'Stretching Pettorali, Dorsali, Spalle, Braccia', sets: 1, reps: 7, weight: 0 }
+                ]
+            },
+            'giovanna0_bassa_a': {
+                name: '🦵 Giovanna0 - Giorno 2: Bassa A',
+                exercises: [
+                    { name: 'Camminata in Salita (Riscaldamento)', sets: 1, reps: 15, weight: 0 },
+                    { name: 'Hip Thrust (Riscaldamento)', sets: 1, reps: 12, weight: 30 },
+                    { name: 'Hip Thrust', sets: 3, reps: 12, weight: 50 },
+                    { name: 'Squat al Muro', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Leg Curl', sets: 3, reps: 12, weight: 35 },
+                    { name: 'Kick Back Macchinario', sets: 3, reps: 12, weight: 25 },
+                    { name: 'Abductor', sets: 3, reps: 15, weight: 30 },
+                    { name: 'Alzate Laterali', sets: 3, reps: 15, weight: 8 },
+                    { name: 'Bicicletta (Addome Circuito)', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Crunch (Addome Circuito)', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Tocca Talloni (Addome Circuito)', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Camminata in Salita (Cardio)', sets: 1, reps: 20, weight: 0 },
+                    { name: 'Stretching Catena Posteriore, Anche, Lombari', sets: 1, reps: 7, weight: 0 }
+                ]
+            },
+            'giovanna0_alta_b': {
+                name: '🏋️ Giovanna0 - Giorno 3: Alta B',
+                exercises: [
+                    { name: 'Ellittica o Camminata (Riscaldamento)', sets: 1, reps: 5, weight: 0 },
+                    { name: 'Panca Inclinata con Bilanciere (Riscaldamento)', sets: 1, reps: 12, weight: 30 },
+                    { name: 'Panca Inclinata con Bilanciere', sets: 3, reps: 12, weight: 45 },
+                    { name: 'Chest Press (Macchinario)', sets: 3, reps: 12, weight: 50 },
+                    { name: 'Macchinario Tirate Dorso (Riscaldamento)', sets: 1, reps: 10, weight: 35 },
+                    { name: 'Macchinario Tirate Dorso', sets: 3, reps: 10, weight: 50 },
+                    { name: 'Trazioni Assistite', sets: 3, reps: 10, weight: 0 },
+                    { name: 'Macchinario Tricipiti', sets: 3, reps: 15, weight: 25 },
+                    { name: 'Plank', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Ellittica o Cyclette (Cardio)', sets: 1, reps: 20, weight: 0 },
+                    { name: 'Stretching Spalle, Schiena, Braccia', sets: 1, reps: 7, weight: 0 }
+                ]
+            },
+            'giovanna0_bassa_b': {
+                name: '🔥 Giovanna0 - Giorno 4: Bassa B',
+                exercises: [
+                    { name: 'Cyclette o Tapis (Riscaldamento)', sets: 1, reps: 15, weight: 0 },
+                    { name: 'Leg Press Verticale (Riscaldamento)', sets: 1, reps: 12, weight: 80 },
+                    { name: 'Leg Press Verticale', sets: 3, reps: 12, weight: 120 },
+                    { name: 'Kick Back al Cavo', sets: 3, reps: 15, weight: 15 },
+                    { name: 'Leg Press Orizzontale', sets: 3, reps: 12, weight: 100 },
+                    { name: 'Macchinario Polpacci', sets: 3, reps: 15, weight: 40 },
+                    { name: 'Adductor', sets: 3, reps: 15, weight: 35 },
+                    { name: 'Shoulder Press', sets: 3, reps: 15, weight: 25 },
+                    { name: 'Russian Twist (Addome Circuito)', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Plank Laterale con Sollevamento Gamba', sets: 3, reps: 45, weight: 0 },
+                    { name: 'Crunch (Addome Circuito)', sets: 3, reps: 30, weight: 0 },
+                    { name: 'Camminata in Salita (Cardio)', sets: 1, reps: 20, weight: 0 },
+                    { name: 'Stretching Quadricipiti, Glutei, Femorali', sets: 1, reps: 7, weight: 0 }
+                ]
+            }
+        };
 
         // Schede PERSONALIZZABILI
         let customSchede = JSON.parse(localStorage.getItem('customSchede') || JSON.stringify({
@@ -2002,6 +2113,21 @@
                 ]
             }
         }));
+
+        // Rimuovi eventuali schede protette memorizzate in precedenza
+        (function purgeProtectedSchede() {
+            let removed = false;
+            Object.keys(customSchede).forEach(key => {
+                if (key.startsWith('giulia24_') || key.startsWith('giovanna0_')) {
+                    delete customSchede[key];
+                    removed = true;
+                }
+            });
+
+            if (removed) {
+                localStorage.setItem('customSchede', JSON.stringify(customSchede));
+            }
+        })();
 
         // Schede PERSONALI (protette da codice)
         const personalSchede = {
@@ -2067,6 +2193,23 @@
                 }
             ]
         };
+
+        function getUnlockedProtectedSchede() {
+            const seen = new Set();
+            const result = [];
+
+            unlockedCodes.forEach(code => {
+                const ids = codeMappings[code] || [];
+                ids.forEach(id => {
+                    if (!seen.has(id) && protectedSchedeData[id]) {
+                        seen.add(id);
+                        result.push([id, protectedSchedeData[id]]);
+                    }
+                });
+            });
+
+            return result;
+        }
 
         // INIZIALIZZAZIONE
         document.addEventListener('DOMContentLoaded', function() {
@@ -3464,13 +3607,34 @@
         // TEMPLATE FUNCTIONS
         function renderSchedaButtons() {
             const container = document.getElementById('SchedaButtons');
-            container.innerHTML = Object.entries(customSchede).map(([id, Scheda]) => {
+
+            const entriesMap = new Map();
+
+            Object.entries(customSchede).forEach(([id, scheda]) => {
+                const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
+                if (!isProtected || unlockedCodes.some(code => codeMappings[code] && codeMappings[code].includes(id))) {
+                    entriesMap.set(id, scheda);
+                }
+            });
+
+            getUnlockedProtectedSchede().forEach(([id, scheda]) => {
+                if (!entriesMap.has(id)) {
+                    entriesMap.set(id, scheda);
+                }
+            });
+
+            const entries = Array.from(entriesMap.entries());
+
+            container.innerHTML = entries.map(([id, Scheda]) => {
                 const isPersonal = id.startsWith('personal_');
+                const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
+                const showActions = !isPersonal && !isProtected;
+
                 return `
                     <button class="template-btn" data-template="${id}">
                         ${Scheda.name}
-                        ${!isPersonal ? `<button class="template-edit-btn" onclick="event.stopPropagation(); editScheda('${id}')">✏️</button>` : ''}
-                        ${!isPersonal ? `<button class="template-delete-btn" onclick="event.stopPropagation(); deleteScheda('${id}')">🗑️</button>` : ''}
+                        ${showActions ? `<button class="template-edit-btn" onclick="event.stopPropagation(); editScheda('${id}')">✏️</button>` : ''}
+                        ${showActions ? `<button class="template-delete-btn" onclick="event.stopPropagation(); deleteScheda('${id}')">🗑️</button>` : ''}
                     </button>
                 `;
             }).join('');
@@ -3484,8 +3648,19 @@
         }
 
         function loadScheda(SchedaId) {
-            const Scheda = customSchede[SchedaId];
-            if (!Scheda) return;
+            let Scheda = customSchede[SchedaId];
+
+            if (!Scheda) {
+                const isProtected = unlockedCodes.some(code => codeMappings[code] && codeMappings[code].includes(SchedaId));
+                if (isProtected && protectedSchedeData[SchedaId]) {
+                    Scheda = protectedSchedeData[SchedaId];
+                }
+            }
+
+            if (!Scheda) {
+                alert('Scheda non disponibile. Inserisci il codice corretto per accedervi.');
+                return;
+            }
 
             currentSchedaName = Scheda.name;
 
@@ -3511,8 +3686,14 @@
 
         function renderSchedaEditors() {
             const container = document.getElementById('SchedaEditorsList');
-            // Filtra le schede personali (non modificabili)
-            const editableSchede = Object.entries(customSchede).filter(([id]) => !id.startsWith('personal_'));
+            
+            // Filtra le schede: escludi personali e schede protette non sbloccate
+            const editableSchede = Object.entries(customSchede).filter(([id]) => {
+                if (id.startsWith('personal_')) return false;
+                const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
+                return !isProtected;
+            });
+            
             container.innerHTML = editableSchede.map(([id, Scheda]) => `
                 <div class="template-editor">
                     <h3>⚙️ ${Scheda.name}</h3>
@@ -4831,28 +5012,27 @@
 
         // SCHEDE PERSONALI
         function showPersonalSchedeModal() {
-            const code = prompt('Inserisci il codice per le schede personali:');
+            const code = prompt('Inserisci il codice per sbloccare schede personali:');
             if (!code) return;
 
-            const schede = personalSchede[code];
-            if (!schede) {
-                alert('Codice non valido. Nessuna scheda aggiunta.');
+            // Controlla se il codice è valido
+            if (!codeMappings[code]) {
+                alert('Codice non valido. Riprova con un codice corretto.');
                 return;
             }
 
-            // Aggiungi le schede
-            schede.forEach(scheda => {
-                const newId = 'personal_' + code + '_' + Date.now() + Math.random();
-                customSchede[newId] = {
-                    name: scheda.name,
-                    exercises: scheda.exercises.map(ex => ({ ...ex }))
-                };
-            });
+            // Controlla se il codice è già stato sbloccato
+            if (unlockedCodes.includes(code)) {
+                alert(`Il codice "${code}" è già stato sbloccato!`);
+                return;
+            }
 
-            saveSchede();
+            // Sblocca il codice per la sessione corrente
+            unlockedCodes.push(code);
+
             renderSchedaButtons();
             renderSchedaEditors();
-            alert(`Schede personali per "${code}" aggiunte con successo!`);
+            alert(`Codice "${code}" sbloccato con successo! Ora puoi vedere le schede corrispondenti.`);
         }
 
         // SCARICA PDF
