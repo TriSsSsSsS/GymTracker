@@ -3666,20 +3666,38 @@
             currentSchedaName = Scheda.name;
 
             currentExercises = Scheda.exercises.map(ex => {
+                const isCardio = isCardioExercise(ex.name);
                 const lastData = getLastExerciseData(ex.name);
-                const defaultSets = Number.isFinite(parseInt(ex.sets, 10)) ? parseInt(ex.sets, 10) : 3;
-                const defaultReps = Number.isFinite(parseInt(ex.reps, 10)) ? parseInt(ex.reps, 10) : 10;
-                const defaultWeight = Number.isFinite(parseFloat(ex.weight)) ? parseFloat(ex.weight) : 0;
-
-                return {
-                    id: Date.now() + Math.random(),
-                    name: ex.name,
-                    sets: lastData?.sets ?? defaultSets,
-                    reps: lastData?.reps ?? defaultReps,
-                    weight: lastData?.weight ?? defaultWeight,
-                    notes: ex.notes || '',
-                    notesCollapsed: true
-                };
+                
+                if (isCardio) {
+                    const defaultTime = Number.isFinite(parseInt(ex.time, 10)) ? parseInt(ex.time, 10) : (lastData?.time ?? 30);
+                    const defaultDistance = Number.isFinite(parseFloat(ex.distance)) ? parseFloat(ex.distance) : (lastData?.distance ?? 5);
+                    
+                    return {
+                        id: Date.now() + Math.random(),
+                        name: ex.name,
+                        isCardio: true,
+                        time: defaultTime,
+                        distance: defaultDistance,
+                        notes: ex.notes || '',
+                        notesCollapsed: true
+                    };
+                } else {
+                    const defaultSets = Number.isFinite(parseInt(ex.sets, 10)) ? parseInt(ex.sets, 10) : (lastData?.sets ?? 3);
+                    const defaultReps = Number.isFinite(parseInt(ex.reps, 10)) ? parseInt(ex.reps, 10) : (lastData?.reps ?? 10);
+                    const defaultWeight = Number.isFinite(parseFloat(ex.weight)) ? parseFloat(ex.weight) : (lastData?.weight ?? 0);
+                    
+                    return {
+                        id: Date.now() + Math.random(),
+                        name: ex.name,
+                        isCardio: false,
+                        sets: defaultSets,
+                        reps: defaultReps,
+                        weight: defaultWeight,
+                        notes: ex.notes || '',
+                        notesCollapsed: true
+                    };
+                }
             });
 
             renderExercises();
@@ -3694,6 +3712,9 @@
                 const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
                 return !isProtected;
             });
+            
+            // Ottieni le schede protette sbloccate
+            const unlockedProtectedSchede = getUnlockedProtectedSchede();
             
             container.innerHTML = editableSchede.map(([id, Scheda]) => `
                 <div class="template-editor">
@@ -3722,7 +3743,31 @@
                         `).join('')}
                     </div>
                 </div>
-            `).join('');
+            `).join('') + 
+            // Aggiungi le schede protette sbloccate in sola lettura
+            (unlockedProtectedSchede.length > 0 ? `
+                <div class="template-editor">
+                    <h3>🔒 Schede Sbloccate (Sola Lettura)</h3>
+                    ${unlockedProtectedSchede.map(([id, Scheda]) => `
+                        <div class="template-editor" style="border: 2px solid #48bb78; margin-bottom: 20px;">
+                            <h3>✅ ${Scheda.name}</h3>
+                            <div class="template-exercises">
+                                ${Scheda.exercises.map((exercise, index) => `
+                                    <div class="template-exercise-item">
+                                        <div class="template-exercise-info">
+                                            <div class="template-exercise-name">${exercise.name}</div>
+                                            <div class="template-exercise-details">${exercise.sets} serie × ${exercise.reps} reps @ ${exercise.weight}kg</div>
+                                        </div>
+                                        <div class="template-exercise-controls">
+                                            <span style="color: #718096; font-size: 0.8em;">🔒 Protetta</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '');
         }
 
         function editScheda(SchedaId) {
@@ -4605,6 +4650,16 @@
 
         // Funzione helper per verificare se un esercizio è cardio
         function isCardioExercise(exerciseName) {
+            // Controlla se il nome contiene indicazioni di cardio
+            const nameLower = exerciseName.toLowerCase();
+            if (nameLower.includes('(cardio)') || nameLower.includes('cardio') || 
+                nameLower.includes('cyclette') || nameLower.includes('ellittica') || 
+                nameLower.includes('tapis roulant') || nameLower.includes('camminata') ||
+                nameLower.includes('elliptical') || nameLower.includes('treadmill')) {
+                return true;
+            }
+            
+            // Altrimenti controlla i muscoli dal database
             const muscles = getMuscleGroupsForExercise(exerciseName);
             return muscles.includes('cardio');
         }
