@@ -5024,7 +5024,7 @@
 
         // SCARICA PDF
         function downloadSchedePdf() {
-            if (!confirm('Vuoi scaricare tutte le schede in PDF?')) return;
+            if (!confirm('Vuoi scaricare le tue schede (incluse quelle sbloccate) in PDF?')) return;
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -5062,7 +5062,25 @@
             let y = 60;
             let schedaCount = 0;
 
+            // Combina schede personalizzate e schede sbloccate
+            const entriesMap = new Map();
+
             Object.entries(customSchede).forEach(([id, scheda]) => {
+                const isProtected = id.startsWith('giulia24_') || id.startsWith('giovanna0_');
+                if (!isProtected || unlockedCodes.some(code => codeMappings[code] && codeMappings[code].includes(id))) {
+                    entriesMap.set(id, scheda);
+                }
+            });
+
+            getUnlockedProtectedSchede().forEach(([id, scheda]) => {
+                if (!entriesMap.has(id)) {
+                    entriesMap.set(id, scheda);
+                }
+            });
+
+            const allSchede = Array.from(entriesMap.entries());
+
+            allSchede.forEach(([id, scheda]) => {
                 schedaCount++;
                 if (y > 220) {
                     doc.addPage();
